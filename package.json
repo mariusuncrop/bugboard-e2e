@@ -1,0 +1,33 @@
+{
+  "name": "bugboard-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright API and UI test suite for the BugBoard demo app.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --project=chromium",
+    "test:all-browsers": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:mobile": "playwright test --project=mobile-chrome",
+    "test:visual": "playwright test --project=visual",
+    "test:update-snapshots": "playwright test --project=visual --update-snapshots",
+    "test:headed": "playwright test --project=chromium --headed",
+    "test:debug": "playwright test --project=chromium --debug",
+    "codegen": "playwright codegen http://localhost:5173",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "install:browsers": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.5",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.7.3",
+    "zod": "^3.24.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

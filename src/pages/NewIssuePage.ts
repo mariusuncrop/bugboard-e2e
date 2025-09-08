@@ -1,0 +1,67 @@
+import type { Locator, Page } from '@playwright/test';
+
+export interface NewIssueInput {
+  title?: string;
+  description?: string;
+  type?: 'bug' | 'task';
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  status?: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
+  assignee?: string;
+  labels?: string;
+}
+
+export class NewIssuePage {
+  readonly form: Locator;
+  readonly title: Locator;
+  readonly description: Locator;
+  readonly type: Locator;
+  readonly priority: Locator;
+  readonly status: Locator;
+  readonly assignee: Locator;
+  readonly labels: Locator;
+  readonly submit: Locator;
+  readonly cancel: Locator;
+  readonly titleError: Locator;
+  readonly labelsError: Locator;
+  readonly formError: Locator;
+
+  constructor(readonly page: Page) {
+    this.form = page.getByTestId('issue-form');
+    this.title = page.getByTestId('issue-title');
+    this.description = page.getByTestId('issue-description');
+    this.type = page.getByTestId('issue-type');
+    this.priority = page.getByTestId('issue-priority');
+    this.status = page.getByTestId('issue-status');
+    this.assignee = page.getByTestId('issue-assignee');
+    this.labels = page.getByTestId('issue-labels');
+    this.submit = page.getByTestId('issue-submit');
+    this.cancel = page.getByTestId('issue-cancel');
+    this.titleError = page.getByTestId('error-title');
+    this.labelsError = page.getByTestId('error-labels');
+    this.formError = page.getByTestId('form-error');
+  }
+
+  async goto(): Promise<void> {
+    await this.page.goto('/issues/new');
+    await this.form.waitFor();
+  }
+
+  async fill(input: NewIssueInput): Promise<void> {
+    if (input.title !== undefined) await this.title.fill(input.title);
+    if (input.description !== undefined) await this.description.fill(input.description);
+    if (input.type) await this.type.selectOption(input.type);
+    if (input.priority) await this.priority.selectOption(input.priority);
+    if (input.status) await this.status.selectOption(input.status);
+    if (input.assignee) await this.assignee.selectOption({ label: input.assignee });
+    if (input.labels !== undefined) await this.labels.fill(input.labels);
+  }
+
+  async submitForm(): Promise<void> {
+    await this.submit.click();
+  }
+
+  async create(input: NewIssueInput): Promise<void> {
+    await this.fill(input);
+    await this.submitForm();
+  }
+}

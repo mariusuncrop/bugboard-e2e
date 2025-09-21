@@ -176,8 +176,9 @@ docker run --rm -v "$(pwd)":/work -w /work --network host \
 - the UI suite sharded across four runners, in parallel across the browser projects
 - the visual suite, when Linux baselines are present
 
-Shards report as blob reports and are merged into one HTML report, published to GitHub Pages so a failed run can
-be inspected without downloading artefacts. Traces, screenshots and video are retained on failure.
+Shards report as blob reports and are merged into one HTML report, uploaded as a build artefact. To host that
+report instead, enable GitHub Pages for the repository with GitHub Actions as the source and set the repository
+variable `PUBLISH_REPORT` to `true`. Traces, screenshots and video are retained on failure.
 
 ## What it found
 

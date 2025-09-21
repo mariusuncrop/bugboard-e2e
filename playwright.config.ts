@@ -46,6 +46,10 @@ export default defineConfig({
     {
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
+      // Every UI project depends on this one, so it runs in Chromium whichever
+      // engine is under test — which means Chromium has to be installed even
+      // for a Firefox or WebKit run.
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'chromium',

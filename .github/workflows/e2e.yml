@@ -77,7 +77,9 @@ jobs:
         run: npm ci
 
       - name: Install browsers
-        run: npx playwright install --with-deps ${{ matrix.project == 'mobile-chrome' && 'chromium' || matrix.project }}
+        # The setup project runs in Chromium, so every job needs it in addition
+        # to whichever engine that job is testing.
+        run: npx playwright install --with-deps chromium ${{ (matrix.project == 'firefox' || matrix.project == 'webkit') && matrix.project || '' }}
 
       - name: Start BugBoard
         working-directory: app
@@ -154,13 +156,6 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [api, ui]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.pages.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -177,12 +172,36 @@ jobs:
           pattern: blob-report-*
           merge-multiple: true
 
-      - name: Merge into one HTML report
+      - name: Merge the shards into one HTML report
         run: npx playwright merge-reports --reporter=html ./all-blob-reports
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload the report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 14
+
+      # Hosting the report needs Pages turned on for the repository. Enable it
+      # with GitHub Actions as the source, then set the repository variable
+      # PUBLISH_REPORT to true; until then the artifact above is the report.
+      - name: Stage the report for GitHub Pages
+        if: vars.PUBLISH_REPORT == 'true'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: playwright-report
 
+  publish-report:
+    name: Publish report
+    if: ${{ !cancelled() && vars.PUBLISH_REPORT == 'true' }}
+    needs: report
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
       - id: pages
         uses: actions/deploy-pages@v4

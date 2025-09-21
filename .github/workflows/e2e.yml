@@ -1,0 +1,188 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Catch drift in the app repo even when nothing here changes.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+env:
+  APP_REPO: mariusuncrop/bugboard-app
+  BASE_URL: http://localhost:5173
+  API_URL: http://localhost:4000
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          path: app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Start BugBoard
+        working-directory: app
+        run: |
+          npm ci
+          npm run dev &
+          npx wait-on "$BASE_URL" "$API_URL/api/health" --timeout 120000
+
+      # No browser needed, so this is the fastest signal in the pipeline.
+      - name: Run API tests
+        run: npx playwright test --project=api
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-api
+          path: blob-report
+          retention-days: 7
+
+  ui:
+    name: UI (${{ matrix.project }}, shard ${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit, mobile-chrome]
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          path: app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install browsers
+        run: npx playwright install --with-deps ${{ matrix.project == 'mobile-chrome' && 'chromium' || matrix.project }}
+
+      - name: Start BugBoard
+        working-directory: app
+        run: |
+          npm ci
+          npm run dev &
+          npx wait-on "$BASE_URL" "$API_URL/api/health" --timeout 120000
+
+      - name: Run UI tests
+        run: npx playwright test --project=${{ matrix.project }} --shard=${{ matrix.shard }}/2
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-${{ matrix.project }}-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 7
+
+  visual:
+    name: Visual
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Look for Linux baselines
+        id: baselines
+        run: |
+          if [ -d tests/visual/__screenshots__/visual/linux ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Linux baselines committed yet — see the README for how to generate them."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.baselines.outputs.present == 'true'
+        with:
+          repository: ${{ env.APP_REPO }}
+          path: app
+
+      - uses: actions/setup-node@v4
+        if: steps.baselines.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        if: steps.baselines.outputs.present == 'true'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start BugBoard
+        if: steps.baselines.outputs.present == 'true'
+        working-directory: app
+        run: |
+          npm ci
+          npm run dev &
+          npx wait-on "$BASE_URL" "$API_URL/api/health" --timeout 120000
+
+      - name: Compare screenshots
+        if: steps.baselines.outputs.present == 'true'
+        run: npx playwright test --project=visual
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() && steps.baselines.outputs.present == 'true' }}
+        with:
+          name: visual-diffs
+          path: test-results
+          retention-days: 7
+
+  report:
+    name: Merge report
+    if: ${{ !cancelled() }}
+    needs: [api, ui]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into one HTML report
+        run: npx playwright merge-reports --reporter=html ./all-blob-reports
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report
+
+      - id: pages
+        uses: actions/deploy-pages@v4

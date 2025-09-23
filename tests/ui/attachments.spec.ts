@@ -1,19 +1,9 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, test } from '../../src/fixtures/index.js';
-
-const tempDir = mkdtempSync(join(tmpdir(), 'bugboard-e2e-'));
-
-const writeTempFile = (name: string, contents: string | Buffer): string => {
-  const path = join(tempDir, name);
-  writeFileSync(path, contents);
-  return path;
-};
+import { oversizedFile, tempFile } from '../../src/support/files.js';
 
 test.describe('attachments', () => {
   test('uploads a file and lists it', async ({ api, issueDetail, tempIssue, toast }) => {
-    const path = writeTempFile('repro-steps.txt', '1. open the app\n2. watch it break\n');
+    const path = tempFile('repro-steps.txt', '1. open the app\n2. watch it break\n');
     await issueDetail.goto(tempIssue.key);
     await expect(issueDetail.attachmentList).toContainText('Nothing attached yet.');
 
@@ -25,7 +15,7 @@ test.describe('attachments', () => {
   });
 
   test('shows the server error when the file is too large', async ({ issueDetail, tempIssue, toast }) => {
-    const path = writeTempFile('too-big.txt', Buffer.alloc(3 * 1024 * 1024, 'a'));
+    const path = oversizedFile();
     await issueDetail.goto(tempIssue.key);
 
     await issueDetail.uploadFile(path);
@@ -35,7 +25,7 @@ test.describe('attachments', () => {
   });
 
   test('rejects an unsupported file type', async ({ issueDetail, tempIssue, toast }) => {
-    const path = writeTempFile('installer.exe', 'MZ');
+    const path = tempFile('installer.exe', 'MZ');
     await issueDetail.goto(tempIssue.key);
 
     await issueDetail.uploadFile(path);
@@ -44,7 +34,7 @@ test.describe('attachments', () => {
   });
 
   test('removes an attachment', async ({ api, issueDetail, tempIssue }) => {
-    const path = writeTempFile('remove-me.txt', 'temporary');
+    const path = tempFile('remove-me.txt', 'temporary');
 
     await test.step('upload a file', async () => {
       await issueDetail.goto(tempIssue.key);

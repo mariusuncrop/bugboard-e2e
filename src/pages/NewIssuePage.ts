@@ -8,6 +8,8 @@ export interface NewIssueInput {
   status?: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
   assignee?: string;
   labels?: string;
+  /** Local paths to attach before submitting. */
+  files?: string[];
 }
 
 export class NewIssuePage {
@@ -21,6 +23,10 @@ export class NewIssuePage {
   readonly labels: Locator;
   readonly submit: Locator;
   readonly cancel: Locator;
+  readonly attachmentInput: Locator;
+  readonly pendingAttachments: Locator;
+  readonly pendingAttachmentsEmpty: Locator;
+  readonly attachmentError: Locator;
   readonly titleError: Locator;
   readonly labelsError: Locator;
   readonly formError: Locator;
@@ -36,6 +42,10 @@ export class NewIssuePage {
     this.labels = page.getByTestId('issue-labels');
     this.submit = page.getByTestId('issue-submit');
     this.cancel = page.getByTestId('issue-cancel');
+    this.attachmentInput = page.getByTestId('issue-attachment-input');
+    this.pendingAttachments = page.getByTestId('pending-attachments');
+    this.pendingAttachmentsEmpty = page.getByTestId('pending-attachments-empty');
+    this.attachmentError = page.getByTestId('error-attachments');
     this.titleError = page.getByTestId('error-title');
     this.labelsError = page.getByTestId('error-labels');
     this.formError = page.getByTestId('form-error');
@@ -54,6 +64,23 @@ export class NewIssuePage {
     if (input.status) await this.status.selectOption(input.status);
     if (input.assignee) await this.assignee.selectOption({ label: input.assignee });
     if (input.labels !== undefined) await this.labels.fill(input.labels);
+    if (input.files) await this.attachFiles(input.files);
+  }
+
+  /**
+   * The input accepts several files at once, and the page appends rather than
+   * replaces, so calling this twice builds up a list.
+   */
+  async attachFiles(paths: string[]): Promise<void> {
+    await this.attachmentInput.setInputFiles(paths);
+  }
+
+  pendingAttachment(filename: string): Locator {
+    return this.page.getByTestId(`pending-attachment-${filename}`);
+  }
+
+  async removePending(filename: string): Promise<void> {
+    await this.page.getByTestId(`remove-pending-${filename}`).click();
   }
 
   async submitForm(): Promise<void> {

@@ -1,5 +1,6 @@
 import { expect, test } from '../../src/fixtures/index.js';
 import { uniqueTitle } from '../../src/support/data.js';
+import { oversizedFile, tempFile } from '../../src/support/files.js';
 
 test.describe('creating an issue', () => {
   test('creates one and opens it', async ({ api, newIssuePage, issueDetail, page, toast }) => {
@@ -109,6 +110,135 @@ test.describe('creating an issue', () => {
     await boardPage.goto();
 
     await expect(boardPage.column('in_review').getByTestId(`issue-card-${key}`)).toBeVisible();
+    await api.deleteIssueIfPresent(key);
+  });
+});
+
+test.describe('attaching files while creating an issue', () => {
+  test('attaches a file to the new issue', async ({ api, newIssuePage, issueDetail, page, toast }) => {
+    const title = uniqueTitle('With an attachment');
+    const path = tempFile('steps-to-reproduce.txt', 'open the app, watch it break');
+
+    await test.step('choose a file before submitting', async () => {
+      await newIssuePage.goto();
+      await newIssuePage.fill({ title, files: [path] });
+      await expect(newIssuePage.pendingAttachment('steps-to-reproduce.txt')).toBeVisible();
+      await expect(newIssuePage.pendingAttachmentsEmpty).toHaveCount(0);
+    });
+
+    await test.step('submit, and the file follows the issue', async () => {
+      await newIssuePage.submitForm();
+      await expect(page).toHaveURL(/\/issues\/BUG-\d+$/);
+      await expect(toast).toContainText('created with 1 file attached');
+      await expect(issueDetail.attachment('steps-to-reproduce.txt')).toBeVisible();
+    });
+
+    const key = (await issueDetail.key.textContent())!;
+
+    await test.step('the attachment is really on the server', async () => {
+      expect((await api.getIssue(key)).attachmentCount).toBe(1);
+    });
+
+    await api.deleteIssueIfPresent(key);
+  });
+
+  test('attaches several files at once', async ({ api, newIssuePage, issueDetail, toast }) => {
+    const title = uniqueTitle('Two attachments');
+    const paths = [tempFile('first.txt', 'one'), tempFile('second.csv', 'a,b\n1,2\n')];
+
+    await newIssuePage.goto();
+    await newIssuePage.create({ title, files: paths });
+
+    await expect(toast).toContainText('created with 2 files attached');
+    await expect(issueDetail.attachment('first.txt')).toBeVisible();
+    await expect(issueDetail.attachment('second.csv')).toBeVisible();
+
+    const key = (await issueDetail.key.textContent())!;
+    expect((await api.getIssue(key)).attachmentCount).toBe(2);
+    await api.deleteIssueIfPresent(key);
+  });
+
+  test('rejects a file over the size limit without creating anything', async ({
+    api,
+    newIssuePage,
+    issueDetail,
+    page,
+  }) => {
+    const title = uniqueTitle('Oversized');
+    await newIssuePage.goto();
+
+    await test.step('the file is refused as soon as it is chosen', async () => {
+      await newIssuePage.attachFiles([oversizedFile()]);
+      await expect(newIssuePage.attachmentError).toContainText('The limit is 2.0 MB.');
+      await expect(newIssuePage.pendingAttachmentsEmpty).toBeVisible();
+      await expect(page, 'nothing should have been submitted yet').toHaveURL(/\/issues\/new$/);
+    });
+
+    await test.step('the issue can still be created, with nothing attached', async () => {
+      await newIssuePage.fill({ title });
+      await newIssuePage.submitForm();
+      const key = (await issueDetail.key.textContent())!;
+      expect((await api.getIssue(key)).attachmentCount).toBe(0);
+      await api.deleteIssueIfPresent(key);
+    });
+  });
+
+  test('rejects an unsupported file type', async ({ newIssuePage }) => {
+    await newIssuePage.goto();
+
+    await newIssuePage.attachFiles([tempFile('installer.exe', 'MZ')]);
+
+    await expect(newIssuePage.attachmentError).toContainText('not a supported file type');
+    await expect(newIssuePage.pendingAttachmentsEmpty).toBeVisible();
+  });
+
+  test('a file can be removed before submitting', async ({ api, newIssuePage, issueDetail }) => {
+    const title = uniqueTitle('Changed my mind');
+    const paths = [tempFile('keep.txt', 'keep'), tempFile('drop.txt', 'drop')];
+
+    await newIssuePage.goto();
+    await newIssuePage.fill({ title, files: paths });
+    await expect(newIssuePage.pendingAttachment('drop.txt')).toBeVisible();
+
+    await newIssuePage.removePending('drop.txt');
+
+    await expect(newIssuePage.pendingAttachment('drop.txt')).toHaveCount(0);
+    await expect(newIssuePage.pendingAttachment('keep.txt')).toBeVisible();
+
+    await newIssuePage.submitForm();
+    await expect(issueDetail.attachment('keep.txt')).toBeVisible();
+
+    const key = (await issueDetail.key.textContent())!;
+    expect((await api.getIssue(key)).attachmentCount).toBe(1);
+    await api.deleteIssueIfPresent(key);
+  });
+
+  test('still opens the issue when an upload fails after it was created', async ({
+    api,
+    newIssuePage,
+    issueDetail,
+    page,
+    toast,
+  }) => {
+    const title = uniqueTitle('Upload fails late');
+    // Break only the upload. The detail page lists attachments from the same
+    // path, and failing that too would mask the behaviour under test.
+    await page.route('**/attachments', (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+        : route.continue(),
+    );
+
+    await newIssuePage.goto();
+    await newIssuePage.create({ title, files: [tempFile('doomed.txt', 'never lands')] });
+
+    await test.step('the failure is reported as an attachment problem, not a failed creation', async () => {
+      await expect(toast).toContainText('created, but 1 file could not be attached');
+      await expect(page).toHaveURL(/\/issues\/BUG-\d+$/);
+    });
+
+    const key = (await issueDetail.key.textContent())!;
+    expect((await api.getIssue(key)).attachmentCount).toBe(0);
     await api.deleteIssueIfPresent(key);
   });
 });

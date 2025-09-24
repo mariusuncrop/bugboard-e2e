@@ -4,7 +4,7 @@ Playwright suite covering [BugBoard](https://github.com/mariusuncrop/bugboard-ap
 accessibility and visual regression.
 
 ```
-345 tests · 48 API · 72 UI across 4 browser projects · 7 visual baselines · ~70s on 4 workers
+371 tests · 50 API · 78 UI across 4 browser projects · 7 visual baselines · ~70s on 4 workers
 ```
 
 ## Running it
@@ -51,8 +51,8 @@ src/
   support/            Environment config, global setup
 tests/
   auth.setup.ts       Signs in over the API once, saves browser state for every UI project
-  api/                48 API tests
-  ui/                 72 UI tests, run against each of four browser projects
+  api/                50 API tests
+  ui/                 78 UI tests, run against each of four browser projects
   visual/             Screenshot baselines, run one worker at a time
 ```
 
@@ -180,6 +180,13 @@ Shards report as blob reports and are merged into one HTML report, uploaded as a
 report instead, enable GitHub Pages for the repository with GitHub Actions as the source and set the repository
 variable `PUBLISH_REPORT` to `true`. Traces, screenshots and video are retained on failure.
 
+### Waiting on an element that exists, not one that is merely enabled
+
+`setInputFiles` does not wait for an input to become enabled — it fills a disabled one quite happily. The new-issue
+form only renders its file input once it has fetched the upload limits, so the test waits for the element to be
+*attached*, which is a guarantee Playwright does honour. Disabling the input instead looked equivalent and let a
+file through under parallel load about one run in five.
+
 ## What it found
 
 Written against the app as it stood, the suite caught five real defects, all since fixed:
@@ -191,6 +198,7 @@ Written against the app as it stood, the suite caught five real defects, all sin
 | Avatar initials failed WCAG AA contrast on every page that shows a user | `tests/ui/accessibility.spec.ts` |
 | Toast notifications rendered off screen on mobile — the board's intrinsic width was widening the layout viewport | `tests/ui/navigation.spec.ts` under `mobile-chrome` |
 | The board never fit at desktop width, so the last column was always cut off | Visual baselines |
+| The new-issue form accepted files before it knew the upload limits, silently skipping client-side validation | `tests/ui/create-issue.spec.ts` under `mobile-chrome` |
 
 ## Licence
 

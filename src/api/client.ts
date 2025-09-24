@@ -1,6 +1,7 @@
 import { request as playwrightRequest, type APIRequestContext, type APIResponse } from '@playwright/test';
 import { env } from '../support/env.js';
 import {
+  appConfigSchema,
   attachmentSchema,
   boardSchema,
   commentSchema,
@@ -126,6 +127,11 @@ export class ApiClient {
   async getStats() {
     const response = await this.expectOk(await this.context.get('/api/stats', { headers: this.auth }), 'Get stats');
     return statsSchema.parse(await response.json());
+  }
+
+  async getConfig() {
+    const response = await this.expectOk(await this.context.get('/api/config', { headers: this.auth }), 'Get config');
+    return appConfigSchema.parse(await response.json());
   }
 
   async listUsers() {

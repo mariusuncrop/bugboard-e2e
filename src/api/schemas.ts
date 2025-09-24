@@ -85,6 +85,13 @@ export const statsSchema = z.object({
   ),
 });
 
+export const appConfigSchema = z.object({
+  upload: z.object({
+    maxBytes: z.number().int().positive(),
+    allowedMimeTypes: z.array(z.string()).nonempty(),
+  }),
+});
+
 export const errorSchema = z.object({
   error: z.object({
     code: z.string(),

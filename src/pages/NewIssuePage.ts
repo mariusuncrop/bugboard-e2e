@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { dropFiles } from '../support/dragAndDrop.js';
 
 export interface NewIssueInput {
   title?: string;
@@ -24,6 +25,7 @@ export class NewIssuePage {
   readonly submit: Locator;
   readonly cancel: Locator;
   readonly attachmentInput: Locator;
+  readonly attachmentDropZone: Locator;
   readonly pendingAttachments: Locator;
   readonly pendingAttachmentsEmpty: Locator;
   readonly attachmentError: Locator;
@@ -43,6 +45,7 @@ export class NewIssuePage {
     this.submit = page.getByTestId('issue-submit');
     this.cancel = page.getByTestId('issue-cancel');
     this.attachmentInput = page.getByTestId('issue-attachment-input');
+    this.attachmentDropZone = page.getByTestId('issue-attachment-dropzone');
     this.pendingAttachments = page.getByTestId('pending-attachments');
     this.pendingAttachmentsEmpty = page.getByTestId('pending-attachments-empty');
     this.attachmentError = page.getByTestId('error-attachments');
@@ -73,6 +76,11 @@ export class NewIssuePage {
    */
   async attachFiles(paths: string[]): Promise<void> {
     await this.attachmentInput.setInputFiles(paths);
+  }
+
+  /** Drops files onto the form rather than choosing them through the picker. */
+  async dropFiles(paths: string[]): Promise<void> {
+    await dropFiles(this.page, this.attachmentDropZone, paths);
   }
 
   pendingAttachment(filename: string): Locator {

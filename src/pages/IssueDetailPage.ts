@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { dropFiles } from '../support/dragAndDrop.js';
 
 export class IssueDetailPage {
   readonly root: Locator;
@@ -19,6 +20,7 @@ export class IssueDetailPage {
   readonly commentSubmit: Locator;
   readonly commentError: Locator;
   readonly attachmentInput: Locator;
+  readonly attachmentDropZone: Locator;
   readonly attachmentList: Locator;
   readonly deleteButton: Locator;
   readonly deleteHint: Locator;
@@ -45,6 +47,7 @@ export class IssueDetailPage {
     this.commentSubmit = page.getByTestId('comment-submit');
     this.commentError = page.getByTestId('error-comment');
     this.attachmentInput = page.getByTestId('attachment-input');
+    this.attachmentDropZone = page.getByTestId('attachment-dropzone');
     this.attachmentList = page.getByTestId('attachment-list');
     this.deleteButton = page.getByTestId('delete-issue');
     this.deleteHint = page.getByTestId('delete-issue-hint');
@@ -85,6 +88,11 @@ export class IssueDetailPage {
 
   async uploadFile(path: string): Promise<void> {
     await this.attachmentInput.setInputFiles(path);
+  }
+
+  /** Drops files onto the attachments card rather than choosing them. */
+  async dropFiles(paths: string[]): Promise<void> {
+    await dropFiles(this.page, this.attachmentDropZone, paths);
   }
 
   async deleteIssue(): Promise<void> {

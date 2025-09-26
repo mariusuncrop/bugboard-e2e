@@ -4,7 +4,7 @@ Playwright suite covering [BugBoard](https://github.com/mariusuncrop/bugboard-ap
 accessibility and visual regression.
 
 ```
-371 tests · 50 API · 78 UI across 4 browser projects · 7 visual baselines · ~70s on 4 workers
+395 tests · 50 API · 84 UI across 4 browser projects · 7 visual baselines · ~80s on 4 workers
 ```
 
 ## Running it
@@ -52,7 +52,7 @@ src/
 tests/
   auth.setup.ts       Signs in over the API once, saves browser state for every UI project
   api/                50 API tests
-  ui/                 78 UI tests, run against each of four browser projects
+  ui/                 84 UI tests, run against each of four browser projects
   visual/             Screenshot baselines, run one worker at a time
 ```
 
@@ -179,6 +179,14 @@ docker run --rm -v "$(pwd)":/work -w /work --network host \
 Shards report as blob reports and are merged into one HTML report, uploaded as a build artefact. To host that
 report instead, enable GitHub Pages for the repository with GitHub Actions as the source and set the repository
 variable `PUBLISH_REPORT` to `true`. Traces, screenshots and video are retained on failure.
+
+### Dropping files that never existed on disk
+
+Playwright cannot drag a file in from the operating system, so
+[`src/support/dragAndDrop.ts`](src/support/dragAndDrop.ts) builds a `DataTransfer` inside the page from bytes read
+in Node, then dispatches `dragenter`, `dragover` and `drop` by hand. The fixtures are the same files the
+click-to-browse specs use, so both routes into the app are tested against identical input — and the helper drives
+the real listeners rather than reaching past them into React state.
 
 ### Waiting on an element that exists, not one that is merely enabled
 

@@ -242,3 +242,47 @@ test.describe('attaching files while creating an issue', () => {
     await api.deleteIssueIfPresent(key);
   });
 });
+
+test.describe('dragging files onto the new issue form', () => {
+  test('a dropped file joins the pending list and is attached on submit', async ({
+    api,
+    newIssuePage,
+    issueDetail,
+    toast,
+  }) => {
+    const title = uniqueTitle('Dropped while filing');
+    await newIssuePage.goto();
+    await newIssuePage.fill({ title });
+
+    await newIssuePage.dropFiles([tempFile('dropped-on-form.txt', 'dragged in')]);
+    await expect(newIssuePage.pendingAttachment('dropped-on-form.txt')).toBeVisible();
+
+    await newIssuePage.submitForm();
+
+    await expect(toast).toContainText('created with 1 file attached');
+    await expect(issueDetail.attachment('dropped-on-form.txt')).toBeVisible();
+
+    const key = (await issueDetail.key.textContent())!;
+    expect((await api.getIssue(key)).attachmentCount).toBe(1);
+    await api.deleteIssueIfPresent(key);
+  });
+
+  test('dropped and chosen files accumulate together', async ({ newIssuePage }) => {
+    await newIssuePage.goto();
+
+    await newIssuePage.attachFiles([tempFile('chosen.txt', 'picked')]);
+    await newIssuePage.dropFiles([tempFile('dragged.txt', 'dropped')]);
+
+    await expect(newIssuePage.pendingAttachment('chosen.txt')).toBeVisible();
+    await expect(newIssuePage.pendingAttachment('dragged.txt')).toBeVisible();
+  });
+
+  test('a dropped file is validated like a chosen one', async ({ newIssuePage }) => {
+    await newIssuePage.goto();
+
+    await newIssuePage.dropFiles([oversizedFile('dropped-too-big.txt')]);
+
+    await expect(newIssuePage.attachmentError).toContainText('The limit is 2.0 MB.');
+    await expect(newIssuePage.pendingAttachmentsEmpty).toBeVisible();
+  });
+});

@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { PROJECTS } from '../support/env.js';
 
 export class IssueListPage {
   readonly table: Locator;
@@ -31,8 +32,8 @@ export class IssueListPage {
     this.paginationInfo = page.getByTestId('pagination-info');
   }
 
-  async goto(query = ''): Promise<void> {
-    await this.page.goto(`/issues${query}`);
+  async goto(query = '', projectKey: string = PROJECTS.main): Promise<void> {
+    await this.page.goto(`/projects/${projectKey.toLowerCase()}/issues${query}`);
   }
 
   row(issueKey: string): Locator {

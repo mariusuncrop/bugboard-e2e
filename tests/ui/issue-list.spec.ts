@@ -144,7 +144,7 @@ test.describe('issue list', () => {
   });
 
   test('shows a loading state before the rows arrive', async ({ issuesPage, page }) => {
-    await page.route('**/api/issues?*', async (route) => {
+    await page.route('**/issues?*', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 800));
       await route.continue();
     });
@@ -157,7 +157,7 @@ test.describe('issue list', () => {
   });
 
   test('reports a failed request instead of showing an empty table', async ({ issuesPage, page, toast }) => {
-    await page.route('**/api/issues?*', (route) => route.fulfill({ status: 500, body: '{}' }));
+    await page.route('**/issues?*', (route) => route.fulfill({ status: 500, body: '{}' }));
 
     await issuesPage.goto();
 

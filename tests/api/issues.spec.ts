@@ -8,7 +8,7 @@ test.describe('issue lifecycle', () => {
 
     const created = await test.step('create the issue', async () => {
       const issue = await api.createIssue({ title, type: 'bug', priority: 'high', labels: ['api'] });
-      expect(issue.key).toMatch(/^BUG-\d+$/);
+      expect(issue.key).toMatch(/^WEB-\d+$/);
       expect(issue.status, 'a new issue starts in the backlog').toBe('backlog');
       expect(issue.reporter?.email).toBe(api.user.email);
       return issue;
@@ -53,12 +53,12 @@ test.describe('issue lifecycle', () => {
   });
 
   test('returns 404 for a key that does not exist', async ({ api }) => {
-    const response = await api.getIssueRaw('BUG-999999');
+    const response = await api.getIssueRaw('WEB-999999');
 
     expect(response.status()).toBe(404);
     const body = errorSchema.parse(await response.json());
     expect(body.error.code).toBe('NOT_FOUND');
-    expect(body.error.message).toContain('BUG-999999');
+    expect(body.error.message).toContain('WEB-999999');
   });
 });
 

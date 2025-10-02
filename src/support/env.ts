@@ -15,6 +15,18 @@ export const env = {
   },
 };
 
+/**
+ * Seeded projects, chosen for what they prove:
+ *   WEB  every demo user is a member — the default for specs that do not care
+ *   API  Jonas (pm) is not a member
+ *   MOB  Marco (dev) and Priya (qa) are not members
+ */
+export const PROJECTS = {
+  main: 'WEB',
+  withoutPm: 'API',
+  withoutMember: 'MOB',
+} as const;
+
 export const STORAGE_STATE = {
   admin: '.auth/admin.json',
   member: '.auth/member.json',

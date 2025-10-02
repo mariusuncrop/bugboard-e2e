@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { PROJECTS } from '../support/env.js';
 
 export type Status = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
 
@@ -15,8 +16,8 @@ export class BoardPage {
     this.priorityFilter = page.getByTestId('board-filter-priority');
   }
 
-  async goto(): Promise<void> {
-    await this.page.goto('/board');
+  async goto(projectKey: string = PROJECTS.main): Promise<void> {
+    await this.page.goto(`/projects/${projectKey.toLowerCase()}/board`);
     await this.board.waitFor();
   }
 
@@ -53,7 +54,10 @@ export class BoardPage {
    */
   async dragCardTo(issueKey: string, status: Status): Promise<void> {
     const source = this.card(issueKey);
-    const target = this.page.getByTestId(`column-body-${status}`);
+    // The column stretches to the full board height; its body is only as tall as
+    // its cards, so a short column's body sits off-screen once the page has
+    // scrolled to a card near the bottom of a long one.
+    const target = this.column(status);
 
     await target.scrollIntoViewIfNeeded();
     await source.scrollIntoViewIfNeeded();

@@ -28,7 +28,7 @@ test.describe('accessibility', () => {
   });
 
   test('the issue detail page has no detectable violations', async ({ page, issueDetail }) => {
-    await issueDetail.goto('BUG-1');
+    await issueDetail.goto('WEB-1');
 
     const results = await scan(page).analyze();
 
@@ -74,7 +74,7 @@ test.describe('accessibility', () => {
 
     await test.step('Enter submits the form', async () => {
       await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/\/board$/);
+      await expect(page).toHaveURL(/\/projects$/);
     });
   });
 });

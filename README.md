@@ -4,7 +4,7 @@ Playwright suite covering [BugBoard](https://github.com/mariusuncrop/bugboard-ap
 accessibility and visual regression.
 
 ```
-395 tests · 50 API · 84 UI across 4 browser projects · 7 visual baselines · ~80s on 4 workers
+497 tests · 72 API · 103 UI across 4 browser projects · 9 visual baselines · ~95s on 4 workers
 ```
 
 ## Running it
@@ -51,8 +51,8 @@ src/
   support/            Environment config, global setup
 tests/
   auth.setup.ts       Signs in over the API once, saves browser state for every UI project
-  api/                50 API tests
-  ui/                 84 UI tests, run against each of four browser projects
+  api/                72 API tests
+  ui/                 103 UI tests, run against each of four browser projects
   visual/             Screenshot baselines, run one worker at a time
 ```
 
@@ -179,6 +179,14 @@ docker run --rm -v "$(pwd)":/work -w /work --network host \
 Shards report as blob reports and are merged into one HTML report, uploaded as a build artefact. To host that
 report instead, enable GitHub Pages for the repository with GitHub Actions as the source and set the repository
 variable `PUBLISH_REPORT` to `true`. Traces, screenshots and video are retained on failure.
+
+### Testing authorisation that depends on data
+
+Role checks are easy: one admin, one member, assert 403. Membership is harder, because the interesting cases need a
+user who is genuinely absent from something. The app's seed makes that true on purpose — Marco is not on the mobile
+project — so [tests/api/projects.spec.ts](tests/api/projects.spec.ts) can assert that a project he cannot see is
+invisible through every door: the project itself, its issue list, its board, an issue by key, and the comments on
+that issue. It also pins the 404-not-403 choice, since a 403 would confirm the project exists.
 
 ### Dropping files that never existed on disk
 

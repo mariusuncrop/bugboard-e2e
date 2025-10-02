@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { PROJECTS } from '../support/env.js';
 
 export class DashboardPage {
   readonly root: Locator;
@@ -21,8 +22,8 @@ export class DashboardPage {
     this.byPriority = page.getByTestId('chart-by-priority');
   }
 
-  async goto(): Promise<void> {
-    await this.page.goto('/dashboard');
+  async goto(projectKey: string = PROJECTS.main): Promise<void> {
+    await this.page.goto(`/projects/${projectKey.toLowerCase()}/dashboard`);
   }
 
   statusCount(status: string): Locator {

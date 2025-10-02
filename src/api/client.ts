@@ -1,8 +1,11 @@
 import { request as playwrightRequest, type APIRequestContext, type APIResponse } from '@playwright/test';
-import { env } from '../support/env.js';
+import { PROJECTS, env } from '../support/env.js';
 import {
   appConfigSchema,
   attachmentSchema,
+  projectMemberSchema,
+  projectSchema,
+  projectSummarySchema,
   boardSchema,
   commentSchema,
   issuePageSchema,
@@ -11,6 +14,7 @@ import {
   type Attachment,
   type Comment,
   type Issue,
+  type Project,
 } from './schemas.js';
 
 export interface IssueInput {
@@ -21,6 +25,13 @@ export interface IssueInput {
   status?: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
   assigneeId?: string | null;
   labels?: string[];
+}
+
+export interface ProjectInput {
+  key: string;
+  name: string;
+  description?: string;
+  memberIds?: string[];
 }
 
 export interface ListQuery {
@@ -96,12 +107,22 @@ export class ApiClient {
 
   // --- reads ---------------------------------------------------------------
 
-  async listIssues(query: ListQuery = {}) {
+  async listIssues(query: ListQuery = {}, projectKey: string = PROJECTS.main) {
     const response = await this.expectOk(
-      await this.context.get('/api/issues', { headers: this.auth, params: query as Record<string, string> }),
-      'List issues',
+      await this.context.get(`/api/projects/${projectKey}/issues`, {
+        headers: this.auth,
+        params: query as Record<string, string>,
+      }),
+      `List issues in ${projectKey}`,
     );
     return issuePageSchema.parse(await response.json());
+  }
+
+  async listIssuesRaw(projectKey: string, query: ListQuery = {}): Promise<APIResponse> {
+    return this.context.get(`/api/projects/${projectKey}/issues`, {
+      headers: this.auth,
+      params: query as Record<string, string>,
+    });
   }
 
   async getIssue(key: string): Promise<Issue> {
@@ -116,22 +137,94 @@ export class ApiClient {
     return this.context.get(`/api/issues/${key}`, { headers: this.auth });
   }
 
-  async getBoard() {
+  async getBoard(projectKey: string = PROJECTS.main) {
     const response = await this.expectOk(
-      await this.context.get('/api/board', { headers: this.auth }),
-      'Get board',
+      await this.context.get(`/api/projects/${projectKey}/board`, { headers: this.auth }),
+      `Get the ${projectKey} board`,
     );
     return boardSchema.parse(await response.json());
   }
 
-  async getStats() {
-    const response = await this.expectOk(await this.context.get('/api/stats', { headers: this.auth }), 'Get stats');
+  async getBoardRaw(projectKey: string): Promise<APIResponse> {
+    return this.context.get(`/api/projects/${projectKey}/board`, { headers: this.auth });
+  }
+
+  async getStats(projectKey: string = PROJECTS.main) {
+    const response = await this.expectOk(
+      await this.context.get(`/api/projects/${projectKey}/stats`, { headers: this.auth }),
+      `Get ${projectKey} stats`,
+    );
     return statsSchema.parse(await response.json());
   }
 
   async getConfig() {
     const response = await this.expectOk(await this.context.get('/api/config', { headers: this.auth }), 'Get config');
     return appConfigSchema.parse(await response.json());
+  }
+
+  async listProjects() {
+    const response = await this.expectOk(
+      await this.context.get('/api/projects', { headers: this.auth }),
+      'List projects',
+    );
+    return ((await response.json()).items as unknown[]).map((item) => projectSummarySchema.parse(item));
+  }
+
+  async getProject(key: string): Promise<Project> {
+    const response = await this.expectOk(
+      await this.context.get(`/api/projects/${key}`, { headers: this.auth }),
+      `Get project ${key}`,
+    );
+    return projectSchema.parse((await response.json()).project);
+  }
+
+  async getProjectRaw(key: string): Promise<APIResponse> {
+    return this.context.get(`/api/projects/${key}`, { headers: this.auth });
+  }
+
+  async createProject(input: ProjectInput): Promise<Project> {
+    const response = await this.expectOk(
+      await this.context.post('/api/projects', { headers: this.auth, data: input }),
+      'Create project',
+    );
+    return projectSchema.parse((await response.json()).project);
+  }
+
+  async createProjectRaw(input: Record<string, unknown>): Promise<APIResponse> {
+    return this.context.post('/api/projects', { headers: this.auth, data: input });
+  }
+
+  async listMembers(key: string) {
+    const response = await this.expectOk(
+      await this.context.get(`/api/projects/${key}/members`, { headers: this.auth }),
+      `List members of ${key}`,
+    );
+    return ((await response.json()).items as unknown[]).map((item) => projectMemberSchema.parse(item));
+  }
+
+  async addMember(key: string, userId: string): Promise<Project> {
+    const response = await this.expectOk(
+      await this.context.post(`/api/projects/${key}/members`, { headers: this.auth, data: { userId } }),
+      `Add ${userId} to ${key}`,
+    );
+    return projectSchema.parse((await response.json()).project);
+  }
+
+  async addMemberRaw(key: string, data: Record<string, unknown>): Promise<APIResponse> {
+    return this.context.post(`/api/projects/${key}/members`, { headers: this.auth, data });
+  }
+
+  async removeMember(key: string, userId: string): Promise<{ project: Project; unassignedIssues: number }> {
+    const response = await this.expectOk(
+      await this.context.delete(`/api/projects/${key}/members/${userId}`, { headers: this.auth }),
+      `Remove ${userId} from ${key}`,
+    );
+    const body = await response.json();
+    return { project: projectSchema.parse(body.project), unassignedIssues: body.unassignedIssues as number };
+  }
+
+  async removeMemberRaw(key: string, userId: string): Promise<APIResponse> {
+    return this.context.delete(`/api/projects/${key}/members/${userId}`, { headers: this.auth });
   }
 
   async listUsers() {
@@ -141,16 +234,22 @@ export class ApiClient {
 
   // --- writes --------------------------------------------------------------
 
-  async createIssue(input: IssueInput): Promise<Issue> {
+  async createIssue(input: IssueInput, projectKey: string = PROJECTS.main): Promise<Issue> {
     const response = await this.expectOk(
-      await this.context.post('/api/issues', { headers: this.auth, data: { type: 'bug', ...input } }),
-      'Create issue',
+      await this.context.post(`/api/projects/${projectKey}/issues`, {
+        headers: this.auth,
+        data: { type: 'bug', ...input },
+      }),
+      `Create an issue in ${projectKey}`,
     );
     return issueSchema.parse((await response.json()).issue);
   }
 
-  async createIssueRaw(input: Partial<IssueInput> | Record<string, unknown>): Promise<APIResponse> {
-    return this.context.post('/api/issues', { headers: this.auth, data: input });
+  async createIssueRaw(
+    input: Partial<IssueInput> | Record<string, unknown>,
+    projectKey: string = PROJECTS.main,
+  ): Promise<APIResponse> {
+    return this.context.post(`/api/projects/${projectKey}/issues`, { headers: this.auth, data: input });
   }
 
   async updateIssue(key: string, patch: Partial<IssueInput>): Promise<Issue> {

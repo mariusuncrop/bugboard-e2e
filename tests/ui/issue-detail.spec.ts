@@ -3,12 +3,12 @@ import { STORAGE_STATE } from '../../src/support/env.js';
 
 test.describe('issue detail', () => {
   test('shows the issue, its comments and its metadata', async ({ api, issueDetail }) => {
-    const issue = await api.getIssue('BUG-1');
-    const comments = await api.listComments('BUG-1');
+    const issue = await api.getIssue('WEB-1');
+    const comments = await api.listComments('WEB-1');
 
-    await issueDetail.goto('BUG-1');
+    await issueDetail.goto('WEB-1');
 
-    await expect(issueDetail.key).toHaveText('BUG-1');
+    await expect(issueDetail.key).toHaveText('WEB-1');
     await expect(issueDetail.title).toHaveText(issue.title);
     await expect(issueDetail.statusSelect).toHaveValue(issue.status);
     await expect(issueDetail.prioritySelect).toHaveValue(issue.priority);
@@ -82,10 +82,10 @@ test.describe('issue detail', () => {
   });
 
   test('shows a not-found page for an unknown key', async ({ page, issueDetail }) => {
-    await page.goto('/issues/BUG-999999');
+    await page.goto('/projects/web/issues/WEB-999999');
 
     await expect(issueDetail.notFound).toBeVisible();
-    await expect(issueDetail.notFound).toContainText('BUG-999999');
+    await expect(issueDetail.notFound).toContainText('WEB-999999');
   });
 });
 

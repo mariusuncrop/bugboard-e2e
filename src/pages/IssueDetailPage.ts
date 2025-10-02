@@ -56,8 +56,9 @@ export class IssueDetailPage {
     this.confirmCancel = page.getByTestId('confirm-cancel');
   }
 
-  async goto(issueKey: string): Promise<void> {
-    await this.page.goto(`/issues/${issueKey}`);
+  /** The project is taken from the key's prefix, so WEB-1 needs no second argument. */
+  async goto(issueKey: string, projectKey = issueKey.split('-')[0]!): Promise<void> {
+    await this.page.goto(`/projects/${projectKey.toLowerCase()}/issues/${issueKey}`);
     await this.root.waitFor();
   }
 

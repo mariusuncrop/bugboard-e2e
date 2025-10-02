@@ -3,7 +3,7 @@ import { expect, test } from '../../src/fixtures/index.js';
 test.describe('navigation and chrome', () => {
   test('moves between the three main views', async ({ page, header, boardPage, issuesPage, dashboard }) => {
     await test.step('start on the board', async () => {
-      await page.goto('/board');
+      await page.goto('/projects/web/board');
       await expect(boardPage.board).toBeVisible();
     });
 
@@ -25,11 +25,11 @@ test.describe('navigation and chrome', () => {
     });
   });
 
-  test('the root path lands on the board', async ({ page, boardPage }) => {
+  test('the root path lands on the project list', async ({ page, projectsPage }) => {
     await page.goto('/');
 
-    await expect(page).toHaveURL(/\/board$/);
-    await expect(boardPage.board).toBeVisible();
+    await expect(page).toHaveURL(/\/projects$/);
+    await expect(projectsPage.list).toBeVisible();
   });
 
   test('an unknown route shows the not-found page', async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe('navigation and chrome', () => {
   });
 
   test('the user menu shows who is signed in', async ({ header }) => {
-    await header.page.goto('/board');
+    await header.page.goto('/projects/web/board');
 
     await header.openUserMenu();
 
@@ -48,7 +48,7 @@ test.describe('navigation and chrome', () => {
   });
 
   test('the theme toggle switches themes and survives a reload', async ({ page, header }) => {
-    await page.goto('/board');
+    await page.goto('/projects/web/board');
     const before = await header.currentTheme();
 
     const after = await test.step('toggle the theme', async () => {

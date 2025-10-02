@@ -26,7 +26,7 @@ test.describe('dashboard', () => {
     // Specs run in parallel against one database, so the live totals move while
     // this test is running. Stubbing the response is what makes the rendering
     // contract assertable — the numbers themselves are covered by the API suite.
-    await page.route('**/api/stats', (route) =>
+    await page.route('**/stats', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STUBBED_STATS) }),
     );
 

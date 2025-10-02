@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { dropFiles } from '../support/dragAndDrop.js';
+import { PROJECTS } from '../support/env.js';
 
 export interface NewIssueInput {
   title?: string;
@@ -54,8 +55,8 @@ export class NewIssuePage {
     this.formError = page.getByTestId('form-error');
   }
 
-  async goto(): Promise<void> {
-    await this.page.goto('/issues/new');
+  async goto(projectKey: string = PROJECTS.main): Promise<void> {
+    await this.page.goto(`/projects/${projectKey.toLowerCase()}/issues/new`);
     await this.form.waitFor();
   }
 

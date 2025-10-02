@@ -14,9 +14,23 @@ test.beforeAll(async () => {
 });
 
 test.describe('appearance', () => {
+  test('the project list matches its baseline', async ({ projectsPage, page }) => {
+    await projectsPage.goto();
+    await expect(projectsPage.list).toBeVisible();
+
+    await expect(page).toHaveScreenshot('projects.png', { fullPage: true });
+  });
+
+  test('the project members page matches its baseline', async ({ projectSettings, page }) => {
+    await projectSettings.goto('WEB');
+    await expect(projectSettings.memberList).toBeVisible();
+
+    await expect(page).toHaveScreenshot('project-members.png', { fullPage: true });
+  });
+
   test('the board matches its baseline', async ({ boardPage, page }) => {
     await boardPage.goto();
-    await expect(boardPage.card('BUG-1')).toBeVisible();
+    await expect(boardPage.card('WEB-1')).toBeVisible();
 
     await expect(page).toHaveScreenshot('board.png', { fullPage: true });
   });
@@ -29,7 +43,7 @@ test.describe('appearance', () => {
   });
 
   test('an issue detail page matches its baseline', async ({ issueDetail, page }) => {
-    await issueDetail.goto('BUG-1');
+    await issueDetail.goto('WEB-1');
 
     await expect(page).toHaveScreenshot('issue-detail.png', { fullPage: true });
   });
@@ -65,6 +79,6 @@ test.describe('appearance', () => {
   test('a single issue card matches its baseline', async ({ boardPage }) => {
     await boardPage.goto();
 
-    await expect(boardPage.card('BUG-1')).toHaveScreenshot('issue-card.png');
+    await expect(boardPage.card('WEB-1')).toHaveScreenshot('issue-card.png');
   });
 });

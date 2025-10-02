@@ -12,9 +12,29 @@ export const userSummarySchema = z.object({
   avatarColor: z.string(),
 });
 
+export const projectSummarySchema = z.object({
+  id: z.string(),
+  key: z.string().regex(/^[A-Z][A-Z0-9]{1,5}$/),
+  name: z.string(),
+  description: z.string(),
+  issueCount: z.number().int().nonnegative(),
+  memberCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+});
+
+export const projectMemberSchema = userSummarySchema.extend({
+  role: z.enum(['admin', 'member']),
+});
+
+export const projectSchema = projectSummarySchema.extend({
+  members: z.array(projectMemberSchema),
+});
+
 export const issueSchema = z.object({
   id: z.string(),
-  key: z.string().regex(/^(BUG|TASK)-\d+$/),
+  projectId: z.string(),
+  /** Project key, then a number that restarts at 1 in every project. */
+  key: z.string().regex(/^[A-Z][A-Z0-9]{1,5}-\d+$/),
   title: z.string(),
   description: z.string(),
   type: z.enum(['bug', 'task']),
@@ -30,6 +50,7 @@ export const issueSchema = z.object({
   reporter: userSummarySchema.nullable(),
   commentCount: z.number().int(),
   attachmentCount: z.number().int(),
+  project: z.object({ id: z.string(), key: z.string(), name: z.string() }).nullable(),
 });
 
 export const issuePageSchema = z.object({
@@ -101,6 +122,8 @@ export const errorSchema = z.object({
 });
 
 export type Issue = z.infer<typeof issueSchema>;
+export type Project = z.infer<typeof projectSchema>;
+export type ProjectSummary = z.infer<typeof projectSummarySchema>;
 export type Comment = z.infer<typeof commentSchema>;
 export type Attachment = z.infer<typeof attachmentSchema>;
 export type ApiErrorBody = z.infer<typeof errorSchema>;

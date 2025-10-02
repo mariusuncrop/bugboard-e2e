@@ -11,7 +11,7 @@ test.describe('kanban board', () => {
   });
 
   test('a card shows its key, title, priority and comment count', async ({ api, boardPage }) => {
-    const issue = await api.getIssue('BUG-1');
+    const issue = await api.getIssue('WEB-1');
     await boardPage.goto();
 
     const card = boardPage.card(issue.key);

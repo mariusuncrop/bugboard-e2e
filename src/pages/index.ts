@@ -5,3 +5,6 @@ export { IssueDetailPage } from './IssueDetailPage.js';
 export { IssueListPage } from './IssueListPage.js';
 export { LoginPage } from './LoginPage.js';
 export { NewIssuePage } from './NewIssuePage.js';
+export { NewProjectPage } from './NewProjectPage.js';
+export { ProjectSettingsPage } from './ProjectSettingsPage.js';
+export { ProjectsPage } from './ProjectsPage.js';

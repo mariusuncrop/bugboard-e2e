@@ -10,10 +10,10 @@ test.describe('signing in', () => {
     await loginPage.goto();
   });
 
-  test('signs in and lands on the board', async ({ loginPage, page, header }) => {
+  test('signs in and lands on the project list', async ({ loginPage, page, header }) => {
     await loginPage.signIn(env.admin.email, env.admin.password);
 
-    await expect(page).toHaveURL(/\/board$/);
+    await expect(page).toHaveURL(/\/projects$/);
     await expect(header.userName).toHaveText('Ada Whitfield');
   });
 
@@ -72,19 +72,19 @@ test.describe('signing in', () => {
     await expect(loginPage.password).toHaveValue('Password123!');
 
     await loginPage.submit.click();
-    await expect(page).toHaveURL(/\/board$/);
+    await expect(page).toHaveURL(/\/projects$/);
   });
 });
 
 test.describe('protected routes', () => {
   test('an anonymous visitor is redirected to the login page', async ({ page }) => {
-    await page.goto('/issues');
+    await page.goto('/projects/web/issues');
 
     await expect(page).toHaveURL(/\/login$/);
   });
 
   test('after signing in the visitor lands on the page they asked for', async ({ page, loginPage }) => {
-    await page.goto('/dashboard');
+    await page.goto('/projects/web/dashboard');
     await expect(page).toHaveURL(/\/login$/);
 
     await loginPage.signIn(env.admin.email, env.admin.password);
@@ -96,7 +96,7 @@ test.describe('protected routes', () => {
     await page.goto('/login');
     await page.evaluate(() => window.localStorage.setItem('bugboard.token', 'tampered.token.value'));
 
-    await page.goto('/board');
+    await page.goto('/projects/web/board');
 
     await expect(page).toHaveURL(/\/login$/);
   });
@@ -107,7 +107,7 @@ test.describe('signing out', () => {
     await test.step('sign in', async () => {
       await loginPage.goto();
       await loginPage.signIn(env.admin.email, env.admin.password);
-      await expect(page).toHaveURL(/\/board$/);
+      await expect(page).toHaveURL(/\/projects$/);
     });
 
     await test.step('sign out', async () => {
@@ -123,7 +123,7 @@ test.describe('signing out', () => {
       // Both sign-in and sign-out navigate with `replace`, so there is no /board
       // entry left in history to go back to — visiting it directly is the check
       // that actually means something here.
-      await page.goto('/board');
+      await page.goto('/projects/web/board');
       await expect(page).toHaveURL(/\/login$/);
     });
   });

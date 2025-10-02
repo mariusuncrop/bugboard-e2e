@@ -9,6 +9,9 @@ import {
   IssueListPage,
   LoginPage,
   NewIssuePage,
+  NewProjectPage,
+  ProjectSettingsPage,
+  ProjectsPage,
 } from '../pages/index.js';
 import { uniqueTitle } from '../support/data.js';
 
@@ -28,6 +31,9 @@ interface Fixtures {
   newIssuePage: NewIssuePage;
   issueDetail: IssueDetailPage;
   dashboard: DashboardPage;
+  projectsPage: ProjectsPage;
+  newProjectPage: NewProjectPage;
+  projectSettings: ProjectSettingsPage;
 }
 
 export const test = base.extend<Fixtures>({
@@ -69,6 +75,9 @@ export const test = base.extend<Fixtures>({
   newIssuePage: async ({ page }, use) => use(new NewIssuePage(page)),
   issueDetail: async ({ page }, use) => use(new IssueDetailPage(page)),
   dashboard: async ({ page }, use) => use(new DashboardPage(page)),
+  projectsPage: async ({ page }, use) => use(new ProjectsPage(page)),
+  newProjectPage: async ({ page }, use) => use(new NewProjectPage(page)),
+  projectSettings: async ({ page }, use) => use(new ProjectSettingsPage(page)),
 });
 
 export { expect };

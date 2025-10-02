@@ -20,7 +20,7 @@ test.describe('creating an issue', () => {
     });
 
     await test.step('the app navigates to the new issue and confirms it', async () => {
-      await expect(page).toHaveURL(/\/issues\/TASK-\d+$/);
+      await expect(page).toHaveURL(/\/issues\/WEB-\d+$/);
       await expect(toast).toContainText('created');
     });
 
@@ -128,7 +128,7 @@ test.describe('attaching files while creating an issue', () => {
 
     await test.step('submit, and the file follows the issue', async () => {
       await newIssuePage.submitForm();
-      await expect(page).toHaveURL(/\/issues\/BUG-\d+$/);
+      await expect(page).toHaveURL(/\/issues\/WEB-\d+$/);
       await expect(toast).toContainText('created with 1 file attached');
       await expect(issueDetail.attachment('steps-to-reproduce.txt')).toBeVisible();
     });
@@ -234,7 +234,7 @@ test.describe('attaching files while creating an issue', () => {
 
     await test.step('the failure is reported as an attachment problem, not a failed creation', async () => {
       await expect(toast).toContainText('created, but 1 file could not be attached');
-      await expect(page).toHaveURL(/\/issues\/BUG-\d+$/);
+      await expect(page).toHaveURL(/\/issues\/WEB-\d+$/);
     });
 
     const key = (await issueDetail.key.textContent())!;

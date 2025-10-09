@@ -57,6 +57,22 @@ export class IssueListPage {
     );
   }
 
+  assigneeSelect(issueKey: string): Locator {
+    return this.page.getByTestId(`assign-${issueKey}`);
+  }
+
+  async assign(issueKey: string, userId: string): Promise<void> {
+    await this.assigneeSelect(issueKey).selectOption(userId);
+  }
+
+  prioritySelect(issueKey: string): Locator {
+    return this.page.getByTestId(`priority-${issueKey}`);
+  }
+
+  async setPriority(issueKey: string, priority: string): Promise<void> {
+    await this.prioritySelect(issueKey).selectOption(priority);
+  }
+
   async sortBy(field: 'key' | 'title' | 'priority' | 'createdAt'): Promise<void> {
     await this.page.getByTestId(`sort-${field}`).click();
   }

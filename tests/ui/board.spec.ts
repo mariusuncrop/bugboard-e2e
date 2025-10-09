@@ -1,4 +1,6 @@
 import { expect, test } from '../../src/fixtures/index.js';
+import { uniqueTitle } from '../../src/support/data.js';
+import { PROJECTS } from '../../src/support/env.js';
 
 test.describe('kanban board', () => {
   test('renders every column with a count that matches its cards', async ({ boardPage }) => {
@@ -42,21 +44,28 @@ test.describe('kanban board', () => {
     });
   });
 
-  // Dragging between neighbouring columns keeps both on screen. Moves across the
-  // whole board are covered by the select control above, which is also the path
-  // a keyboard user takes.
-  test('drags a card into the next column', async ({ api, boardPage, tempIssue, isMobile }) => {
+  // A pointer gesture needs its target on screen, and the shared WEB board grows
+  // a long backlog as other specs create fixtures in it. A small project keeps
+  // every column visible, so this tests the gesture rather than the scroll
+  // position. Long-distance moves are covered by the select control above.
+  test('drags a card into the next column', async ({ api, boardPage, isMobile }) => {
     test.skip(
       Boolean(isMobile),
       'HTML5 drag and drop is a pointer gesture. Touch users move cards with the select control, which the test above covers.',
     );
 
-    await boardPage.goto();
+    const issue = await api.createIssue({ title: uniqueTitle('Draggable') }, PROJECTS.withoutMember);
 
-    await boardPage.dragCardTo(tempIssue.key, 'todo');
+    try {
+      await boardPage.goto(PROJECTS.withoutMember);
 
-    await expect(boardPage.column('todo').getByTestId(`issue-card-${tempIssue.key}`)).toBeVisible();
-    expect((await api.getIssue(tempIssue.key)).status).toBe('todo');
+      await boardPage.dragCardTo(issue.key, 'todo');
+
+      await expect(boardPage.column('todo').getByTestId(`issue-card-${issue.key}`)).toBeVisible();
+      expect((await api.getIssue(issue.key)).status).toBe('todo');
+    } finally {
+      await api.deleteIssueIfPresent(issue.key);
+    }
   });
 
   test('a move survives a reload', async ({ boardPage, tempIssue, page }) => {

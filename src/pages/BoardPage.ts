@@ -37,6 +37,23 @@ export class BoardPage {
     return this.column(status).locator('[data-issue-key]');
   }
 
+  /** Reassigns straight from the card, without opening the issue. */
+  assigneeSelect(issueKey: string): Locator {
+    return this.page.getByTestId(`assign-${issueKey}`);
+  }
+
+  async assign(issueKey: string, userId: string): Promise<void> {
+    await this.assigneeSelect(issueKey).selectOption(userId);
+  }
+
+  prioritySelect(issueKey: string): Locator {
+    return this.page.getByTestId(`priority-${issueKey}`);
+  }
+
+  async setPriority(issueKey: string, priority: string): Promise<void> {
+    await this.prioritySelect(issueKey).selectOption(priority);
+  }
+
   /** The accessible alternative to dragging — a select on each card. */
   async moveViaSelect(issueKey: string, status: Status): Promise<void> {
     await this.page.getByTestId(`move-${issueKey}`).selectOption(status);
@@ -53,7 +70,10 @@ export class BoardPage {
    * makes that explicit, and makes the test stable.
    */
   async dragCardTo(issueKey: string, status: Status): Promise<void> {
-    const source = this.card(issueKey);
+    // Grab the title, not the card's centre: the card carries selects for status,
+    // assignee and priority, and pressing on one of those opens a dropdown
+    // instead of starting a drag.
+    const source = this.card(issueKey).getByTestId('issue-card-title');
     // The column stretches to the full board height; its body is only as tall as
     // its cards, so a short column's body sits off-screen once the page has
     // scrolled to a card near the bottom of a long one.

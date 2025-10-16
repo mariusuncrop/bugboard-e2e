@@ -9,6 +9,8 @@ export class IssueDetailPage {
   readonly title: Locator;
   readonly description: Locator;
   readonly labels: Locator;
+  readonly dueOn: Locator;
+  readonly dueBadge: Locator;
   readonly statusSelect: Locator;
   readonly prioritySelect: Locator;
   readonly assigneeSelect: Locator;
@@ -36,6 +38,8 @@ export class IssueDetailPage {
     this.title = page.getByTestId('issue-title');
     this.description = page.getByTestId('issue-description');
     this.labels = page.getByTestId('issue-labels');
+    this.dueOn = page.getByTestId('issue-due-on');
+    this.dueBadge = page.getByTestId('issue-side').getByTestId('due-badge');
     this.statusSelect = page.getByTestId('issue-status-select');
     this.prioritySelect = page.getByTestId('issue-priority-select');
     this.assigneeSelect = page.getByTestId('issue-assignee-select');
@@ -64,6 +68,10 @@ export class IssueDetailPage {
 
   async setStatus(status: string): Promise<void> {
     await this.statusSelect.selectOption(status);
+  }
+
+  async setDueOn(date: string): Promise<void> {
+    await this.dueOn.fill(date);
   }
 
   async setPriority(priority: string): Promise<void> {

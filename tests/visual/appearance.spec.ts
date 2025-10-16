@@ -9,6 +9,11 @@ import { ApiClient } from '../../src/api/client.js';
  * Baselines are per platform (see snapshotPathTemplate). Refresh the Linux ones
  * the same way CI produces them — see the README.
  */
+/** Deadlines are seeded relative to today, so their wording changes daily. */
+const maskDeadlines = (page: import('@playwright/test').Page) => ({
+  mask: [page.getByTestId('due-badge')],
+});
+
 test.beforeAll(async () => {
   await ApiClient.resetDatabase();
 });
@@ -32,20 +37,20 @@ test.describe('appearance', () => {
     await boardPage.goto();
     await expect(boardPage.card('WEB-1')).toBeVisible();
 
-    await expect(page).toHaveScreenshot('board.png', { fullPage: true });
+    await expect(page).toHaveScreenshot('board.png', { fullPage: true, ...maskDeadlines(page) });
   });
 
   test('the issue list matches its baseline', async ({ issuesPage, page }) => {
     await issuesPage.goto();
     await expect(issuesPage.table).toBeVisible();
 
-    await expect(page).toHaveScreenshot('issue-list.png', { fullPage: true });
+    await expect(page).toHaveScreenshot('issue-list.png', { fullPage: true, ...maskDeadlines(page) });
   });
 
   test('an issue detail page matches its baseline', async ({ issueDetail, page }) => {
     await issueDetail.goto('WEB-1');
 
-    await expect(page).toHaveScreenshot('issue-detail.png', { fullPage: true });
+    await expect(page).toHaveScreenshot('issue-detail.png', { fullPage: true, ...maskDeadlines(page) });
   });
 
   test('the dashboard matches its baseline', async ({ dashboard, page }) => {
@@ -60,7 +65,7 @@ test.describe('appearance', () => {
     await header.toggleTheme();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
-    await expect(page).toHaveScreenshot('board-dark.png', { fullPage: true });
+    await expect(page).toHaveScreenshot('board-dark.png', { fullPage: true, ...maskDeadlines(page) });
 
     // Leave the theme as the next test expects to find it.
     await header.toggleTheme();
@@ -76,9 +81,9 @@ test.describe('appearance', () => {
     await expect(page).toHaveScreenshot('login.png', { fullPage: true });
   });
 
-  test('a single issue card matches its baseline', async ({ boardPage }) => {
+  test('a single issue card matches its baseline', async ({ boardPage, page }) => {
     await boardPage.goto();
 
-    await expect(boardPage.card('WEB-1')).toHaveScreenshot('issue-card.png');
+    await expect(boardPage.card('WEB-1')).toHaveScreenshot('issue-card.png', maskDeadlines(page));
   });
 });

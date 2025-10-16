@@ -25,6 +25,7 @@ export interface IssueInput {
   status?: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
   assigneeId?: string | null;
   labels?: string[];
+  dueOn?: string | null;
 }
 
 export interface ProjectInput {
@@ -41,6 +42,7 @@ export interface ListQuery {
   type?: string;
   assigneeId?: string;
   label?: string;
+  due?: string;
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;

@@ -9,6 +9,7 @@ export interface NewIssueInput {
   priority?: 'low' | 'medium' | 'high' | 'critical';
   status?: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
   assignee?: string;
+  dueOn?: string;
   labels?: string;
   /** Local paths to attach before submitting. */
   files?: string[];
@@ -22,6 +23,7 @@ export class NewIssuePage {
   readonly priority: Locator;
   readonly status: Locator;
   readonly assignee: Locator;
+  readonly dueOn: Locator;
   readonly labels: Locator;
   readonly submit: Locator;
   readonly cancel: Locator;
@@ -42,6 +44,7 @@ export class NewIssuePage {
     this.priority = page.getByTestId('issue-priority');
     this.status = page.getByTestId('issue-status');
     this.assignee = page.getByTestId('issue-assignee');
+    this.dueOn = page.getByTestId('issue-due-on');
     this.labels = page.getByTestId('issue-labels');
     this.submit = page.getByTestId('issue-submit');
     this.cancel = page.getByTestId('issue-cancel');
@@ -67,6 +70,7 @@ export class NewIssuePage {
     if (input.priority) await this.priority.selectOption(input.priority);
     if (input.status) await this.status.selectOption(input.status);
     if (input.assignee) await this.assignee.selectOption({ label: input.assignee });
+    if (input.dueOn !== undefined) await this.dueOn.fill(input.dueOn);
     if (input.labels !== undefined) await this.labels.fill(input.labels);
     if (input.files) await this.attachFiles(input.files);
   }

@@ -65,6 +65,10 @@ export class IssueListPage {
     await this.assigneeSelect(issueKey).selectOption(userId);
   }
 
+  dueBadge(issueKey: string): Locator {
+    return this.row(issueKey).getByTestId('due-badge');
+  }
+
   prioritySelect(issueKey: string): Locator {
     return this.page.getByTestId(`priority-${issueKey}`);
   }
@@ -73,7 +77,7 @@ export class IssueListPage {
     await this.prioritySelect(issueKey).selectOption(priority);
   }
 
-  async sortBy(field: 'key' | 'title' | 'priority' | 'createdAt'): Promise<void> {
+  async sortBy(field: 'key' | 'title' | 'priority' | 'createdAt' | 'dueOn'): Promise<void> {
     await this.page.getByTestId(`sort-${field}`).click();
   }
 }

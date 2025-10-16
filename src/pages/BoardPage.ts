@@ -46,6 +46,10 @@ export class BoardPage {
     await this.assigneeSelect(issueKey).selectOption(userId);
   }
 
+  dueBadge(issueKey: string): Locator {
+    return this.page.getByTestId(`${'issue-card'}-${issueKey}`).getByTestId('due-badge');
+  }
+
   prioritySelect(issueKey: string): Locator {
     return this.page.getByTestId(`priority-${issueKey}`);
   }

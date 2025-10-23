@@ -196,6 +196,14 @@ export class ApiClient {
     return this.context.post('/api/projects', { headers: this.auth, data: input });
   }
 
+  async listLabels(key: string) {
+    const response = await this.expectOk(
+      await this.context.get(`/api/projects/${key}/labels`, { headers: this.auth }),
+      `List labels in ${key}`,
+    );
+    return (await response.json()).items as { label: string; count: number }[];
+  }
+
   async listMembers(key: string) {
     const response = await this.expectOk(
       await this.context.get(`/api/projects/${key}/members`, { headers: this.auth }),

@@ -209,3 +209,41 @@ test.describe('assignment respects membership', () => {
     expect(members.map((member) => member.email)).toContain('pm@bugboard.dev');
   });
 });
+
+test.describe('labels in use', () => {
+  test('reports each label with how many issues carry it', async ({ api }) => {
+    const labels = await api.listLabels(PROJECTS.main);
+
+    expect(labels.length).toBeGreaterThan(0);
+    for (const { label, count } of labels) {
+      const matching = await api.listIssues({ label, pageSize: 100 }, PROJECTS.main);
+      expect(matching.total, `${label} should be on ${count} issues`).toBe(count);
+    }
+  });
+
+  test('orders them by how common they are', async ({ api }) => {
+    const counts = (await api.listLabels(PROJECTS.main)).map((entry) => entry.count);
+
+    expect(counts).toEqual([...counts].sort((a, b) => b - a));
+  });
+
+  test('only counts issues in that project', async ({ api }) => {
+    const label = `only-${Math.random().toString(36).slice(2, 7)}`;
+    const issue = await api.createIssue({ title: uniqueTitle('Scoped label'), labels: [label] }, PROJECTS.main);
+
+    try {
+      expect((await api.listLabels(PROJECTS.main)).map((entry) => entry.label)).toContain(label);
+      expect((await api.listLabels(PROJECTS.withoutMember)).map((entry) => entry.label)).not.toContain(label);
+    } finally {
+      await api.deleteIssueIfPresent(issue.key);
+    }
+  });
+
+  test('a member cannot read the labels of a project they cannot see', async ({ memberApi, request }) => {
+    const response = await request.get(`/api/projects/${PROJECTS.withoutMember}/labels`, {
+      headers: { Authorization: `Bearer ${memberApi.token}` },
+    });
+
+    expect(response.status()).toBe(404);
+  });
+});

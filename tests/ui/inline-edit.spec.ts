@@ -39,11 +39,10 @@ test.describe('assigning from the board', () => {
   test('offers only the project’s own members', async ({ boardPage, tempIssue }) => {
     await boardPage.goto();
 
-    const options = await boardPage.assigneeSelect(tempIssue.key).getByRole('option').allTextContents();
-
-    expect(options).toContain('Unassigned');
-    expect(options).toContain('Jonas Lindqvist');
-    expect(options, 'everyone is on the WEB project').toHaveLength(5);
+    const select = boardPage.assigneeSelect(tempIssue.key);
+    await expect(select.getByRole('option'), 'Unassigned plus everyone on WEB').toHaveCount(5);
+    await expect(select.getByRole('option', { name: 'Unassigned' })).toHaveCount(1);
+    await expect(select.getByRole('option', { name: 'Jonas Lindqvist' })).toHaveCount(1);
   });
 
   test('the change survives a reload', async ({ boardPage, tempIssue, page }) => {
@@ -114,10 +113,13 @@ test.describe('assigning from the issue list', () => {
       await issuesPage.goto('', 'MOB');
       await issuesPage.searchFor(issue.title);
 
-      const options = await issuesPage.assigneeSelect(issue.key).getByRole('option').allTextContents();
-
-      expect(options).toContain('Jonas Lindqvist');
-      expect(options, 'Marco is not on the mobile project').not.toContain('Marco Reyes');
+      // The member list arrives with its own request, so assert rather than read.
+      const select = issuesPage.assigneeSelect(issue.key);
+      await expect(select.getByRole('option', { name: 'Jonas Lindqvist' })).toHaveCount(1);
+      await expect(
+        select.getByRole('option', { name: 'Marco Reyes' }),
+        'Marco is not on the mobile project',
+      ).toHaveCount(0);
     } finally {
       await api.deleteIssueIfPresent(issue.key);
     }

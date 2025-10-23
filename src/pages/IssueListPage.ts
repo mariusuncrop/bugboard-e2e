@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 import { PROJECTS } from '../support/env.js';
 
 export class IssueListPage {
+  readonly root: Locator;
   readonly table: Locator;
   readonly rows: Locator;
   readonly loading: Locator;
@@ -11,12 +12,15 @@ export class IssueListPage {
   readonly priorityFilter: Locator;
   readonly typeFilter: Locator;
   readonly assigneeFilter: Locator;
+  readonly labelFilter: Locator;
+  readonly clearLabels: Locator;
   readonly clearFilters: Locator;
   readonly previousPage: Locator;
   readonly nextPage: Locator;
   readonly paginationInfo: Locator;
 
   constructor(readonly page: Page) {
+    this.root = page.getByTestId('issues-page');
     this.table = page.getByTestId('issues-table');
     this.rows = page.locator('[data-testid^="issue-row-"]');
     this.loading = page.getByTestId('issues-loading');
@@ -26,6 +30,8 @@ export class IssueListPage {
     this.priorityFilter = page.getByTestId('filter-priority');
     this.typeFilter = page.getByTestId('filter-type');
     this.assigneeFilter = page.getByTestId('filter-assignee');
+    this.labelFilter = page.getByTestId('label-filter');
+    this.clearLabels = page.getByTestId('label-filter-clear');
     this.clearFilters = page.getByTestId('filters-clear');
     this.previousPage = page.getByTestId('pagination-prev');
     this.nextPage = page.getByTestId('pagination-next');
@@ -34,6 +40,9 @@ export class IssueListPage {
 
   async goto(query = '', projectKey: string = PROJECTS.main): Promise<void> {
     await this.page.goto(`/projects/${projectKey.toLowerCase()}/issues${query}`);
+    // Wait for the page itself, not for its rows: specs that assert on the
+    // loading state or on a failed request need to arrive before those settle.
+    await this.root.waitFor();
   }
 
   row(issueKey: string): Locator {
@@ -75,6 +84,14 @@ export class IssueListPage {
 
   async setPriority(issueKey: string, priority: string): Promise<void> {
     await this.prioritySelect(issueKey).selectOption(priority);
+  }
+
+  labelChip(label: string): Locator {
+    return this.page.getByTestId(`label-filter-${label}`);
+  }
+
+  async toggleLabel(label: string): Promise<void> {
+    await this.labelChip(label).click();
   }
 
   async sortBy(field: 'key' | 'title' | 'priority' | 'createdAt' | 'dueOn'): Promise<void> {

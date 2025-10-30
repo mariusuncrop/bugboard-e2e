@@ -19,6 +19,13 @@ test.beforeAll(async () => {
 });
 
 test.describe('appearance', () => {
+  test('the home page matches its baseline', async ({ homePage, page }) => {
+    await homePage.goto();
+    await expect(homePage.assigned).toBeVisible();
+
+    await expect(page).toHaveScreenshot('home.png', { fullPage: true, ...maskDeadlines(page) });
+  });
+
   test('the project list matches its baseline', async ({ projectsPage, page }) => {
     await projectsPage.goto();
     await expect(projectsPage.list).toBeVisible();

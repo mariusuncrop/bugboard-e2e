@@ -25,11 +25,11 @@ test.describe('navigation and chrome', () => {
     });
   });
 
-  test('the root path lands on the project list', async ({ page, projectsPage }) => {
+  test('the root path lands on the home page', async ({ page, homePage }) => {
     await page.goto('/');
 
-    await expect(page).toHaveURL(/\/projects$/);
-    await expect(projectsPage.list).toBeVisible();
+    await expect(homePage.root).toBeVisible();
+    await expect(homePage.assigned).toBeVisible();
   });
 
   test('an unknown route shows the not-found page', async ({ page }) => {

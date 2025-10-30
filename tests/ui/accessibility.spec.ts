@@ -74,7 +74,7 @@ test.describe('accessibility', () => {
 
     await test.step('Enter submits the form', async () => {
       await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/\/projects$/);
+      await expect(page).toHaveURL(/\/$/);
     });
   });
 });

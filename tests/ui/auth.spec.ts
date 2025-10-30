@@ -10,10 +10,10 @@ test.describe('signing in', () => {
     await loginPage.goto();
   });
 
-  test('signs in and lands on the project list', async ({ loginPage, page, header }) => {
+  test('signs in and lands on the home page', async ({ loginPage, page, header }) => {
     await loginPage.signIn(env.admin.email, env.admin.password);
 
-    await expect(page).toHaveURL(/\/projects$/);
+    await expect(page).toHaveURL(/\/$/);
     await expect(header.userName).toHaveText('Ada Whitfield');
   });
 
@@ -72,7 +72,7 @@ test.describe('signing in', () => {
     await expect(loginPage.password).toHaveValue('Password123!');
 
     await loginPage.submit.click();
-    await expect(page).toHaveURL(/\/projects$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 });
 
@@ -107,7 +107,7 @@ test.describe('signing out', () => {
     await test.step('sign in', async () => {
       await loginPage.goto();
       await loginPage.signIn(env.admin.email, env.admin.password);
-      await expect(page).toHaveURL(/\/projects$/);
+      await expect(page).toHaveURL(/\/$/);
     });
 
     await test.step('sign out', async () => {

@@ -164,6 +164,17 @@ export class ApiClient {
     return appConfigSchema.parse(await response.json());
   }
 
+  async getMySummary() {
+    const response = await this.expectOk(
+      await this.context.get('/api/me/summary', { headers: this.auth }),
+      'Get personal summary',
+    );
+    return (await response.json()) as {
+      projects: { key: string; openIssues: number; assignedToMe: number }[];
+      assigned: { open: number; overdue: number; done: number; items: { key: string }[] };
+    };
+  }
+
   async listProjects() {
     const response = await this.expectOk(
       await this.context.get('/api/projects', { headers: this.auth }),

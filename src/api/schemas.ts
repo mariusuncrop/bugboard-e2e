@@ -52,6 +52,10 @@ export const issueSchema = z.object({
   assignee: userSummarySchema.nullable(),
   reporter: userSummarySchema.nullable(),
   commentCount: z.number().int(),
+  linkCount: z.number().int(),
+  parent: z.object({ id: z.string(), key: z.string(), title: z.string(), status: z.string() }).nullable(),
+  ancestors: z.array(z.object({ id: z.string(), key: z.string(), title: z.string() })),
+  childCount: z.number().int(),
   attachmentCount: z.number().int(),
   project: z.object({ id: z.string(), key: z.string(), name: z.string() }).nullable(),
 });
@@ -62,6 +66,16 @@ export const issuePageSchema = z.object({
   pageSize: z.number().int(),
   total: z.number().int(),
   totalPages: z.number().int(),
+});
+
+export const issueLinkSchema = z.object({
+  id: z.string(),
+  type: z.enum(['relates', 'blocks', 'duplicates']),
+  direction: z.enum(['outward', 'inward']),
+  wording: z.string(),
+  issue: z
+    .object({ id: z.string(), key: z.string(), title: z.string(), status: z.string(), type: z.string() })
+    .nullable(),
 });
 
 export const commentSchema = z.object({
@@ -128,5 +142,6 @@ export type Issue = z.infer<typeof issueSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type ProjectSummary = z.infer<typeof projectSummarySchema>;
 export type Comment = z.infer<typeof commentSchema>;
+export type IssueLink = z.infer<typeof issueLinkSchema>;
 export type Attachment = z.infer<typeof attachmentSchema>;
 export type ApiErrorBody = z.infer<typeof errorSchema>;

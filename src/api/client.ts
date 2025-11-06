@@ -8,12 +8,14 @@ import {
   projectSummarySchema,
   boardSchema,
   commentSchema,
+  issueLinkSchema,
   issuePageSchema,
   issueSchema,
   statsSchema,
   type Attachment,
   type Comment,
   type Issue,
+  type IssueLink,
   type Project,
 } from './schemas.js';
 
@@ -26,6 +28,7 @@ export interface IssueInput {
   assigneeId?: string | null;
   labels?: string[];
   dueOn?: string | null;
+  parentId?: string | null;
 }
 
 export interface ProjectInput {
@@ -345,6 +348,38 @@ export class ApiClient {
     file: { name: string; mimeType: string; buffer: Buffer },
   ): Promise<APIResponse> {
     return this.context.post(`/api/issues/${key}/attachments`, { headers: this.auth, multipart: { file } });
+  }
+
+  async listChildren(key: string): Promise<Issue[]> {
+    const response = await this.expectOk(
+      await this.context.get(`/api/issues/${key}/children`, { headers: this.auth }),
+      `List children of ${key}`,
+    );
+    return ((await response.json()).items as unknown[]).map((item) => issueSchema.parse(item));
+  }
+
+  async listLinks(key: string): Promise<IssueLink[]> {
+    const response = await this.expectOk(
+      await this.context.get(`/api/issues/${key}/links`, { headers: this.auth }),
+      `List links on ${key}`,
+    );
+    return ((await response.json()).items as unknown[]).map((item) => issueLinkSchema.parse(item));
+  }
+
+  async linkIssues(key: string, type: string, target: string): Promise<IssueLink> {
+    const response = await this.expectOk(
+      await this.context.post(`/api/issues/${key}/links`, { headers: this.auth, data: { type, target } }),
+      `Link ${key} to ${target}`,
+    );
+    return issueLinkSchema.parse((await response.json()).link);
+  }
+
+  async linkIssuesRaw(key: string, data: Record<string, unknown>): Promise<APIResponse> {
+    return this.context.post(`/api/issues/${key}/links`, { headers: this.auth, data });
+  }
+
+  async unlinkRaw(id: string): Promise<APIResponse> {
+    return this.context.delete(`/api/links/${id}`, { headers: this.auth });
   }
 
   // --- test support --------------------------------------------------------

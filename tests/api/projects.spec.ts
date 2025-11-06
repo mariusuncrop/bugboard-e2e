@@ -57,14 +57,22 @@ test.describe('issue keys', () => {
     }
   });
 
-  test('a new issue takes the next number in its own project', async ({ api }) => {
-    const before = await api.listIssues({ pageSize: 100 }, PROJECTS.withoutMember);
-    const created = await api.createIssue({ title: uniqueTitle('Numbered') }, PROJECTS.withoutMember);
+  test('numbering keeps going up, and never reuses a key', async ({ api }) => {
+    const first = await api.createIssue({ title: uniqueTitle('Numbered one') }, PROJECTS.withoutMember);
+    const second = await api.createIssue({ title: uniqueTitle('Numbered two') }, PROJECTS.withoutMember);
 
-    expect(created.key).toBe(`${PROJECTS.withoutMember}-${before.total + 1}`);
-    expect(created.project?.key).toBe(PROJECTS.withoutMember);
+    const numberOf = (key: string) => Number(key.split('-')[1]);
+    expect(second.key).toBe(`${PROJECTS.withoutMember}-${numberOf(first.key) + 1}`);
+    expect(first.project?.key).toBe(PROJECTS.withoutMember);
 
-    await api.deleteIssueIfPresent(created.key);
+    // Deleting does not wind the counter back: a key that has been used once
+    // must never point at a different issue later.
+    await api.deleteIssue(second.key);
+    const third = await api.createIssue({ title: uniqueTitle('Numbered three') }, PROJECTS.withoutMember);
+    expect(numberOf(third.key)).toBeGreaterThan(numberOf(second.key));
+
+    await api.deleteIssueIfPresent(first.key);
+    await api.deleteIssueIfPresent(third.key);
   });
 });
 

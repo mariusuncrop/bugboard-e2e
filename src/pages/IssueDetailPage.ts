@@ -24,6 +24,20 @@ export class IssueDetailPage {
   readonly attachmentInput: Locator;
   readonly attachmentDropZone: Locator;
   readonly attachmentList: Locator;
+  readonly subtasks: Locator;
+  readonly subtaskList: Locator;
+  readonly subtasksEmpty: Locator;
+  readonly subtaskTitle: Locator;
+  readonly addSubtaskButton: Locator;
+  readonly subtaskProgress: Locator;
+  readonly subtaskError: Locator;
+  readonly links: Locator;
+  readonly linkList: Locator;
+  readonly linksEmpty: Locator;
+  readonly linkType: Locator;
+  readonly linkTarget: Locator;
+  readonly addLinkButton: Locator;
+  readonly linkError: Locator;
   readonly deleteButton: Locator;
   readonly deleteHint: Locator;
   readonly confirmDialog: Locator;
@@ -53,6 +67,20 @@ export class IssueDetailPage {
     this.attachmentInput = page.getByTestId('attachment-input');
     this.attachmentDropZone = page.getByTestId('attachment-dropzone');
     this.attachmentList = page.getByTestId('attachment-list');
+    this.subtasks = page.getByTestId('subtasks');
+    this.subtaskList = page.getByTestId('subtask-list');
+    this.subtasksEmpty = page.getByTestId('subtasks-empty');
+    this.subtaskTitle = page.getByTestId('subtask-title');
+    this.addSubtaskButton = page.getByTestId('add-subtask-button');
+    this.subtaskProgress = page.getByTestId('subtask-progress');
+    this.subtaskError = page.getByTestId('subtask-error');
+    this.links = page.getByTestId('issue-links');
+    this.linkList = page.getByTestId('link-list');
+    this.linksEmpty = page.getByTestId('links-empty');
+    this.linkType = page.getByTestId('link-type');
+    this.linkTarget = page.getByTestId('link-target');
+    this.addLinkButton = page.getByTestId('add-link-button');
+    this.linkError = page.getByTestId('link-error');
     this.deleteButton = page.getByTestId('delete-issue');
     this.deleteHint = page.getByTestId('delete-issue-hint');
     this.confirmDialog = page.getByTestId('confirm-dialog');
@@ -102,6 +130,45 @@ export class IssueDetailPage {
   /** Drops files onto the attachments card rather than choosing them. */
   async dropFiles(paths: string[]): Promise<void> {
     await dropFiles(this.page, this.attachmentDropZone, paths);
+  }
+
+  subtask(issueKey: string): Locator {
+    return this.page.getByTestId(`subtask-${issueKey}`);
+  }
+
+  subtaskRows(): Locator {
+    return this.subtaskList.locator('li[data-testid^="subtask-"]');
+  }
+
+  ancestor(issueKey: string): Locator {
+    return this.page.getByTestId(`ancestor-${issueKey}`);
+  }
+
+  async addSubtask(title: string): Promise<void> {
+    await this.subtaskTitle.fill(title);
+    await this.addSubtaskButton.click();
+  }
+
+  async detachSubtask(issueKey: string): Promise<void> {
+    await this.page.getByTestId(`detach-${issueKey}`).click();
+  }
+
+  linkTo(issueKey: string): Locator {
+    return this.page.getByTestId(`link-${issueKey}`);
+  }
+
+  linkRows(): Locator {
+    return this.linkList.locator('li[data-testid^="link-"]');
+  }
+
+  async addLink(type: string, targetKey: string): Promise<void> {
+    await this.linkType.selectOption(type);
+    await this.linkTarget.fill(targetKey);
+    await this.addLinkButton.click();
+  }
+
+  async removeLink(issueKey: string): Promise<void> {
+    await this.page.getByTestId(`unlink-${issueKey}`).click();
   }
 
   async deleteIssue(): Promise<void> {

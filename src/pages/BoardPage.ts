@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { PROJECTS } from '../support/env.js';
 
 export type Status = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
@@ -6,13 +6,19 @@ export type Status = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
 export class BoardPage {
   readonly board: Locator;
   readonly loading: Locator;
+  readonly search: Locator;
   readonly assigneeFilter: Locator;
+  readonly typeFilter: Locator;
   readonly priorityFilter: Locator;
+  readonly clearFilters: Locator;
 
   constructor(readonly page: Page) {
     this.board = page.getByTestId('board');
     this.loading = page.getByTestId('board-loading');
-    this.assigneeFilter = page.getByTestId('board-filter-assignee');
+    this.search = page.getByTestId('board-search');
+    this.assigneeFilter = page.getByTestId('assignee-filter');
+    this.typeFilter = page.getByTestId('board-filter-type');
+    this.clearFilters = page.getByTestId('board-filters-clear');
     this.priorityFilter = page.getByTestId('board-filter-priority');
   }
 
@@ -117,8 +123,22 @@ export class BoardPage {
     await this.page.mouse.up();
   }
 
+  assigneeChip(value: string): Locator {
+    return this.page.getByTestId(`assignee-chip-${value}`);
+  }
+
   async filterByAssignee(value: string): Promise<void> {
-    await this.assigneeFilter.selectOption(value);
+    await this.assigneeChip(value).click();
+  }
+
+  async searchFor(term: string): Promise<void> {
+    await this.search.fill(term);
+    // Debounced by 300ms, then pushed into the query string.
+    await expect(this.page).toHaveURL(term ? /[?&]q=/ : /\/board(\?|$)/);
+  }
+
+  async filterByType(value: string): Promise<void> {
+    await this.typeFilter.selectOption(value);
   }
 
   async filterByPriority(value: string): Promise<void> {

@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { PROJECTS } from '../support/env.js';
 
 export class IssueListPage {
@@ -29,7 +29,7 @@ export class IssueListPage {
     this.statusFilter = page.getByTestId('filter-status');
     this.priorityFilter = page.getByTestId('filter-priority');
     this.typeFilter = page.getByTestId('filter-type');
-    this.assigneeFilter = page.getByTestId('filter-assignee');
+    this.assigneeFilter = page.getByTestId('assignee-filter');
     this.labelFilter = page.getByTestId('label-filter');
     this.clearLabels = page.getByTestId('label-filter-clear');
     this.clearFilters = page.getByTestId('filters-clear');
@@ -51,8 +51,10 @@ export class IssueListPage {
 
   async searchFor(term: string): Promise<void> {
     await this.search.fill(term);
-    // The input is debounced by 300ms before it rewrites the query string.
-    await this.page.waitForURL(term ? /[?&]q=/ : /\/issues(\?|$)/);
+    // Debounced by 300ms, then pushed into the query string. A polling URL
+    // assertion suits a history push better than waitForURL, which carries
+    // navigation semantics this never triggers.
+    await expect(this.page).toHaveURL(term ? /[?&]q=/ : /\/issues(\?|$)/);
   }
 
   async openIssue(issueKey: string): Promise<void> {
@@ -84,6 +86,14 @@ export class IssueListPage {
 
   async setPriority(issueKey: string, priority: string): Promise<void> {
     await this.prioritySelect(issueKey).selectOption(priority);
+  }
+
+  assigneeChip(value: string): Locator {
+    return this.page.getByTestId(`assignee-chip-${value}`);
+  }
+
+  async filterByAssignee(value: string): Promise<void> {
+    await this.assigneeChip(value).click();
   }
 
   labelChip(label: string): Locator {

@@ -90,12 +90,17 @@ test.describe('kanban board', () => {
     });
 
     await test.step('every remaining card belongs to that user', async () => {
-      const avatars = boardPage.board.getByTestId('avatar');
-      await expect(avatars.first()).toBeVisible();
-      const ids = await avatars.evaluateAll((nodes) =>
-        nodes.map((node) => (node as HTMLElement).dataset.userId),
-      );
-      expect(new Set(ids)).toEqual(new Set([marco.id]));
+      // The board refetches after the filter changes, so poll rather than read
+      // the avatars once.
+      await expect
+        .poll(async () => [
+          ...new Set(
+            await boardPage.board
+              .getByTestId('avatar')
+              .evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).dataset.userId ?? '')),
+          ),
+        ])
+        .toEqual([marco.id]);
     });
   });
 

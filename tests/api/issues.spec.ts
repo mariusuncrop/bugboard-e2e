@@ -15,7 +15,11 @@ test.describe('issue lifecycle', () => {
     });
 
     await test.step('read it back', async () => {
-      expect(await api.getIssue(created.key)).toEqual(created);
+      // Everything but `position`, which is a place in a shared column: other
+      // specs adding or removing issues alongside it will renumber the column.
+      const { position: _created, ...expected } = created;
+      const { position: _fetched, ...actual } = await api.getIssue(created.key);
+      expect(actual).toEqual(expected);
     });
 
     await test.step('update two fields', async () => {

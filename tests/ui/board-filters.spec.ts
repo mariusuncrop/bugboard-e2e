@@ -1,4 +1,5 @@
 import { expect, test } from '../../src/fixtures/index.js';
+import { expectEveryAttribute } from '../../src/support/attributes.js';
 import { uniqueTitle } from '../../src/support/data.js';
 
 test.describe('searching the board', () => {
@@ -48,11 +49,7 @@ test.describe('filtering the board by type', () => {
 
     await boardPage.filterByType('bug');
 
-    const badges = boardPage.board.getByTestId('type-badge');
-    await expect(badges.first()).toBeVisible();
-    for (const badge of await badges.all()) {
-      await expect(badge).toHaveAttribute('data-type', 'bug');
-    }
+    await expectEveryAttribute(boardPage.board.getByTestId('type-badge'), 'data-type', 'bug');
   });
 
   test('shows only tasks', async ({ boardPage }) => {
@@ -60,9 +57,7 @@ test.describe('filtering the board by type', () => {
 
     await boardPage.filterByType('task');
 
-    for (const badge of await boardPage.board.getByTestId('type-badge').all()) {
-      await expect(badge).toHaveAttribute('data-type', 'task');
-    }
+    await expectEveryAttribute(boardPage.board.getByTestId('type-badge'), 'data-type', 'task');
   });
 });
 

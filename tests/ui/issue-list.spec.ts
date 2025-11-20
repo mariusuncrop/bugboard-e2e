@@ -1,4 +1,5 @@
 import { expect, test } from '../../src/fixtures/index.js';
+import { expectEveryAttribute } from '../../src/support/attributes.js';
 import { uniqueTitle } from '../../src/support/data.js';
 
 test.describe('issue list', () => {
@@ -60,10 +61,7 @@ test.describe('issue list', () => {
     await issuesPage.goto();
     await issuesPage.statusFilter.selectOption('done');
 
-    await expect(issuesPage.rows.first()).toBeVisible();
-    for (const badge of await issuesPage.table.getByTestId('status-badge').all()) {
-      await expect(badge).toHaveAttribute('data-status', 'done');
-    }
+    await expectEveryAttribute(issuesPage.table.getByTestId('status-badge'), 'data-status', 'done');
   });
 
   test('combines several filters', async ({ issuesPage, page }) => {
@@ -79,10 +77,8 @@ test.describe('issue list', () => {
     });
 
     await test.step('every row satisfies both filters', async () => {
-      for (const row of await issuesPage.rows.all()) {
-        await expect(row.getByTestId('status-badge')).toHaveAttribute('data-status', 'done');
-        await expect(row.getByTestId('type-badge')).toHaveAttribute('data-type', 'task');
-      }
+      await expectEveryAttribute(issuesPage.table.getByTestId('status-badge'), 'data-status', 'done');
+      await expectEveryAttribute(issuesPage.table.getByTestId('type-badge'), 'data-type', 'task');
     });
   });
 
@@ -101,9 +97,7 @@ test.describe('issue list', () => {
     await issuesPage.goto('?priority=critical');
 
     await expect(issuesPage.priorityFilter).toHaveValue('critical');
-    for (const badge of await issuesPage.table.getByTestId('priority-badge').all()) {
-      await expect(badge).toHaveAttribute('data-priority', 'critical');
-    }
+    await expectEveryAttribute(issuesPage.table.getByTestId('priority-badge'), 'data-priority', 'critical');
   });
 
   test('sorts by priority, and reverses on a second click', async ({ issuesPage, page }) => {

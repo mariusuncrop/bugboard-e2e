@@ -1,4 +1,5 @@
 import { expect, test } from '../../src/fixtures/index.js';
+import { expectEveryAttribute } from '../../src/support/attributes.js';
 import { uniqueLabel, uniqueTitle } from '../../src/support/data.js';
 
 test.describe('filtering by label', () => {
@@ -100,9 +101,7 @@ test.describe('filtering by label', () => {
 
     await expect(page).toHaveURL(/status=done/);
     await expect(page).toHaveURL(/label=ui/);
-    for (const row of await issuesPage.rows.all()) {
-      await expect(row.getByTestId('status-badge')).toHaveAttribute('data-status', 'done');
-    }
+    await expectEveryAttribute(issuesPage.table.getByTestId('status-badge'), 'data-status', 'done');
   });
 
   test('each project offers only its own labels', async ({ api, issuesPage }) => {

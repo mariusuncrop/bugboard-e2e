@@ -4,7 +4,7 @@ Playwright suite covering [BugBoard](https://github.com/mariusuncrop/bugboard-ap
 accessibility and visual regression.
 
 ```
-497 tests · 72 API · 103 UI across 4 browser projects · 9 visual baselines · ~95s on 4 workers
+852 tests · 112 API · 184 UI across 4 browser projects · 12 visual baselines · ~160s on 4 workers
 ```
 
 ## Running it
@@ -51,8 +51,8 @@ src/
   support/            Environment config, global setup
 tests/
   auth.setup.ts       Signs in over the API once, saves browser state for every UI project
-  api/                72 API tests
-  ui/                 103 UI tests, run against each of four browser projects
+  api/                112 API tests
+  ui/                 184 UI tests, run against each of four browser projects
   visual/             Screenshot baselines, run one worker at a time
 ```
 
@@ -180,6 +180,20 @@ Shards report as blob reports and are merged into one HTML report, uploaded as a
 report instead, enable GitHub Pages for the repository with GitHub Actions as the source and set the repository
 variable `PUBLISH_REPORT` to `true`. Traces, screenshots and video are retained on failure.
 
+### Relationships are mostly about what must not be allowed
+
+The interesting half of [links](tests/api/links.spec.ts) and
+[subtasks](tests/api/subtasks.spec.ts) is the cases that have to be refused: an issue linked to itself, the same
+pair linked twice in either direction, a parent moved under its own child — and the same one level deeper, which is
+the case a check that only looks at the immediate parent will miss.
+
+### Dates are always relative to today
+
+No spec hard-codes a date. The app seeds deadlines relative to the current day so its overdue and due-soon colours
+always have something to show, and the specs use the same helper, so the suite does not start failing on a
+particular morning. The due badges are masked out of the visual baselines for the same reason: their wording
+changes daily by design, and a snapshot cannot hold that still.
+
 ### Testing authorisation that depends on data
 
 Role checks are easy: one admin, one member, assert 403. Membership is harder, because the interesting cases need a
@@ -215,6 +229,9 @@ Written against the app as it stood, the suite caught five real defects, all sin
 | Toast notifications rendered off screen on mobile — the board's intrinsic width was widening the layout viewport | `tests/ui/navigation.spec.ts` under `mobile-chrome` |
 | The board never fit at desktop width, so the last column was always cut off | Visual baselines |
 | The new-issue form accepted files before it knew the upload limits, silently skipping client-side validation | `tests/ui/create-issue.spec.ts` under `mobile-chrome` |
+| The post-login redirect still pointed at a route that no longer existed | `tests/ui/auth.spec.ts` |
+| The links router repeated an earlier mistake — mounted at `/api` with a blanket auth guard, it turned every unknown path into a `401` | `tests/api/contract.spec.ts` |
+| A label chip's count faded to 2.85:1 against its own background | `tests/ui/accessibility.spec.ts` |
 
 ## Licence
 

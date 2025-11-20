@@ -1,4 +1,5 @@
 import { expect, test } from '../../src/fixtures/index.js';
+import { expectEveryAttribute } from '../../src/support/attributes.js';
 import { uniqueTitle } from '../../src/support/data.js';
 import { PROJECTS } from '../../src/support/env.js';
 
@@ -116,11 +117,7 @@ test.describe('kanban board', () => {
     await boardPage.goto();
     await boardPage.filterByPriority('critical');
 
-    const badges = boardPage.board.getByTestId('priority-badge');
-    await expect(badges.first()).toBeVisible();
-    for (const badge of await badges.all()) {
-      await expect(badge).toHaveAttribute('data-priority', 'critical');
-    }
+    await expectEveryAttribute(boardPage.board.getByTestId('priority-badge'), 'data-priority', 'critical');
   });
 
   test('an empty column says so rather than rendering nothing', async ({ boardPage }) => {

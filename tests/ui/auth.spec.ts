@@ -128,3 +128,72 @@ test.describe('signing out', () => {
     });
   });
 });
+
+test.describe('what is loaded once a session begins', () => {
+  // Every other UI spec starts already authenticated, which meant nothing
+  // covered data fetched by a provider mounted above the router: it ran once on
+  // the login page, got a 401, and never tried again once the visitor signed in.
+  test('the project list is populated after signing in through the form', async ({
+    loginPage,
+    projectsPage,
+    homePage,
+    page,
+  }) => {
+    await loginPage.goto();
+    await loginPage.signIn(env.admin.email, env.admin.password);
+    await expect(homePage.root).toBeVisible();
+
+    // Navigate inside the app rather than calling goto: a fresh page load
+    // remounts every provider and would hide the very thing this covers.
+    await homePage.allProjectsLink.click();
+    await expect(page).toHaveURL(/\/projects$/);
+
+    await expect(projectsPage.list).toBeVisible();
+    await expect(projectsPage.empty, 'the visitor is an admin and sees every project').toHaveCount(0);
+    expect((await projectsPage.visibleKeys()).length).toBeGreaterThan(0);
+  });
+
+  test('the project switcher is populated too', async ({ loginPage, homePage, projectsPage, page }) => {
+    await loginPage.goto();
+    await loginPage.signIn(env.admin.email, env.admin.password);
+    await expect(homePage.root).toBeVisible();
+
+    await homePage.allProjectsLink.click();
+    await projectsPage.open('WEB');
+
+    // Options inside a select are never "visible" to Playwright; count them.
+    await expect(page.getByTestId('project-select').getByRole('option')).not.toHaveCount(0);
+  });
+
+  test('signing in as someone else replaces the previous list', async ({
+    loginPage,
+    projectsPage,
+    header,
+    page,
+  }) => {
+    await loginPage.goto();
+    await loginPage.signIn(env.admin.email, env.admin.password);
+    await projectsPage.goto();
+    const asAdmin = await projectsPage.visibleKeys();
+
+    await header.logout();
+    // Signing out from /projects means signing back in returns there.
+    await loginPage.signIn(env.member.email, env.member.password);
+    await expect(page).toHaveURL(/\/projects$/);
+
+    const asMember = await projectsPage.visibleKeys();
+    expect(asMember.length, 'a member sees fewer projects than an admin').toBeLessThan(asAdmin.length);
+    expect(asMember).not.toContain('MOB');
+  });
+
+  test('signing out empties the list rather than leaving it behind', async ({ loginPage, page, header }) => {
+    await loginPage.goto();
+    await loginPage.signIn(env.admin.email, env.admin.password);
+
+    await header.logout();
+
+    await expect(page).toHaveURL(/\/login$/);
+    await page.goto('/projects');
+    await expect(page, 'a signed-out visitor never reaches the list').toHaveURL(/\/login$/);
+  });
+});

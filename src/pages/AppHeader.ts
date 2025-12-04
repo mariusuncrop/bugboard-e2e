@@ -11,6 +11,8 @@ export class AppHeader {
   readonly dashboardLink: Locator;
   readonly newIssueButton: Locator;
   readonly themeToggle: Locator;
+  readonly projectSwitcher: Locator;
+  readonly projectSelect: Locator;
   readonly userMenu: Locator;
   readonly userName: Locator;
   readonly userRole: Locator;
@@ -23,6 +25,8 @@ export class AppHeader {
     this.dashboardLink = page.getByTestId('nav-dashboard');
     this.newIssueButton = page.getByTestId('new-issue-button');
     this.themeToggle = page.getByTestId('theme-toggle');
+    this.projectSwitcher = page.getByTestId('project-switcher');
+    this.projectSelect = page.getByTestId('project-select');
     this.userMenu = page.getByTestId('user-menu');
     this.userName = page.getByTestId('user-menu-name');
     this.userRole = page.getByTestId('user-menu-role');
@@ -37,6 +41,11 @@ export class AppHeader {
     await this.openUserMenu();
     await this.logoutButton.click();
     await this.page.waitForURL('**/login');
+  }
+
+  /** Jumps to another project from wherever you are. */
+  async switchProject(projectKey: string): Promise<void> {
+    await this.projectSelect.selectOption(projectKey);
   }
 
   async toggleTheme(): Promise<void> {

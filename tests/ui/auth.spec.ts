@@ -168,11 +168,16 @@ test.describe('what is loaded once a session begins', () => {
   test('signing in as someone else replaces the previous list', async ({
     loginPage,
     projectsPage,
+    homePage,
     header,
     page,
   }) => {
     await loginPage.goto();
     await loginPage.signIn(env.admin.email, env.admin.password);
+    // Wait for the session to be established before navigating: going straight
+    // to /projects can outrun the login request and bounce back to /login.
+    await expect(homePage.root).toBeVisible();
+
     await projectsPage.goto();
     const asAdmin = await projectsPage.visibleKeys();
 
@@ -180,6 +185,7 @@ test.describe('what is loaded once a session begins', () => {
     // Signing out from /projects means signing back in returns there.
     await loginPage.signIn(env.member.email, env.member.password);
     await expect(page).toHaveURL(/\/projects$/);
+    await expect(projectsPage.list.or(projectsPage.empty).first()).toBeVisible();
 
     const asMember = await projectsPage.visibleKeys();
     expect(asMember.length, 'a member sees fewer projects than an admin').toBeLessThan(asAdmin.length);

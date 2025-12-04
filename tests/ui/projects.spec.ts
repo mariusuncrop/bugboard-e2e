@@ -164,6 +164,73 @@ test.describe('managing members through the UI', () => {
   });
 });
 
+test.describe('the header project picker', () => {
+  test('is there on the home page, which belongs to no project', async ({ homePage, header }) => {
+    await homePage.goto();
+
+    await expect(header.projectSwitcher).toBeVisible();
+    await expect(header.projectSelect).toHaveValue('');
+    await expect(header.projectSelect.getByRole('option', { name: /Go to a project/ })).toHaveCount(1);
+  });
+
+  test('is there on the project list too', async ({ projectsPage, header }) => {
+    await projectsPage.goto();
+
+    await expect(header.projectSwitcher).toBeVisible();
+  });
+
+  test('jumps straight to a board from the home page', async ({ homePage, header, page, boardPage }) => {
+    await homePage.goto();
+
+    await header.switchProject(PROJECTS.withoutMember);
+
+    await expect(page).toHaveURL(/\/projects\/mob\/board$/);
+    await expect(boardPage.board).toBeVisible();
+  });
+
+  test('shows the project you are already in', async ({ boardPage, header }) => {
+    await boardPage.goto(PROJECTS.withoutPm);
+
+    await expect(header.projectSelect).toHaveValue(PROJECTS.withoutPm);
+    await expect(
+      header.projectSelect.getByRole('option', { name: /Go to a project/ }),
+      'no placeholder once a project is open',
+    ).toHaveCount(0);
+  });
+
+  test('keeps you on the same kind of page when you switch', async ({ issuesPage, header, page }) => {
+    await issuesPage.goto('', PROJECTS.main);
+
+    await header.switchProject(PROJECTS.withoutPm);
+
+    await expect(page, 'issues to issues, not back to a board').toHaveURL(/\/projects\/api\/issues$/);
+    await expect(issuesPage.table).toBeVisible();
+  });
+
+  test('from one issue it lands on the other project’s list', async ({ issueDetail, header, page }) => {
+    await issueDetail.goto('WEB-1');
+
+    await header.switchProject(PROJECTS.withoutPm);
+
+    // That issue key does not exist in the project being switched to.
+    await expect(page).toHaveURL(/\/projects\/api\/issues$/);
+  });
+
+  test.describe('as a member', () => {
+    test.use({ storageState: STORAGE_STATE.member });
+
+    test('only offers the projects they are on', async ({ homePage, header }) => {
+      await homePage.goto();
+
+      await expect(header.projectSelect.getByRole('option', { name: new RegExp(PROJECTS.main) })).toHaveCount(1);
+      await expect(
+        header.projectSelect.getByRole('option', { name: new RegExp(PROJECTS.withoutMember) }),
+        'Marco is not on the mobile project',
+      ).toHaveCount(0);
+    });
+  });
+});
+
 test.describe('switching project', () => {
   test('the switcher moves between boards', async ({ boardPage, page, header }) => {
     await boardPage.goto(PROJECTS.main);

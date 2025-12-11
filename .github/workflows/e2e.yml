@@ -156,6 +156,10 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [api, ui]
     runs-on: ubuntu-latest
+    # The tests are the gate; this job only collects their output into one
+    # readable report. Artifact downloads fail transiently often enough that
+    # letting it redden a run where every test passed would be misleading.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

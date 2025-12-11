@@ -82,39 +82,6 @@ test.describe('linking issues through the UI', () => {
     }
   });
 
-  test('reports a key that matches nothing', async ({ issueDetail, tempIssue }) => {
-    await issueDetail.goto(tempIssue.key);
-
-    await issueDetail.addLink('relates', 'WEB-999999');
-
-    await expect(issueDetail.linkError).toContainText('WEB-999999');
-    await expect(issueDetail.linksEmpty).toBeVisible();
-  });
-
-  test('refuses to link an issue to itself, with a reason', async ({ issueDetail, tempIssue }) => {
-    await issueDetail.goto(tempIssue.key);
-
-    await issueDetail.addLink('relates', tempIssue.key);
-
-    await expect(issueDetail.linkError).toHaveText('An issue cannot be linked to itself.');
-  });
-
-  test('refuses a second link between the same pair', async ({ api, issueDetail, tempIssue }) => {
-    const other = await api.createIssue({ title: uniqueTitle('Already linked') });
-
-    try {
-      await api.linkIssues(tempIssue.key, 'relates', other.key);
-      await issueDetail.goto(tempIssue.key);
-
-      await issueDetail.addLink('blocks', other.key);
-
-      await expect(issueDetail.linkError).toContainText('already linked');
-      await expect(issueDetail.linkRows()).toHaveCount(1);
-    } finally {
-      await api.deleteIssueIfPresent(other.key);
-    }
-  });
-
   test('accepts a key typed in lower case', async ({ api, issueDetail, tempIssue }) => {
     const other = await api.createIssue({ title: uniqueTitle('Lower case target') });
 
@@ -124,6 +91,207 @@ test.describe('linking issues through the UI', () => {
       await issueDetail.addLink('relates', other.key.toLowerCase());
 
       await expect(issueDetail.linkTo(other.key)).toBeVisible();
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+});
+
+test.describe('finding the issue to link', () => {
+  test('searches by part of the title', async ({ api, issueDetail, tempIssue }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Distinctive phrase here') });
+
+    try {
+      await issueDetail.goto(tempIssue.key);
+
+      await issueDetail.searchForLink('Distinctive phrase');
+
+      await expect(issueDetail.linkOption(other.key)).toBeVisible();
+      await expect(issueDetail.linkOption(other.key)).toContainText(other.title);
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+
+  test('searches by key', async ({ api, issueDetail, tempIssue }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Findable by key') });
+
+    try {
+      await issueDetail.goto(tempIssue.key);
+
+      await issueDetail.searchForLink(other.key);
+
+      await expect(issueDetail.linkOption(other.key)).toBeVisible();
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+
+  test('never offers the issue you are already on', async ({ issueDetail, tempIssue }) => {
+    await issueDetail.goto(tempIssue.key);
+
+    await issueDetail.searchForLink(tempIssue.title);
+
+    // Linking an issue to itself is refused by the server; the picker simply
+    // never suggests it.
+    await expect(issueDetail.linkOption(tempIssue.key)).toHaveCount(0);
+  });
+
+  test('stops offering an issue once it is linked', async ({ api, issueDetail, tempIssue }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Linked once already') });
+
+    try {
+      await issueDetail.goto(tempIssue.key);
+      await issueDetail.addLink('relates', other.key);
+      await expect(issueDetail.linkTo(other.key)).toBeVisible();
+
+      await issueDetail.searchForLink(other.key);
+
+      await expect(issueDetail.linkOption(other.key)).toHaveCount(0);
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+
+  test('says so when nothing matches', async ({ issueDetail, tempIssue }) => {
+    await issueDetail.goto(tempIssue.key);
+
+    await issueDetail.searchForLink('zzz-no-issue-is-called-this-zzz');
+
+    await expect(issueDetail.linkNoMatches).toBeVisible();
+  });
+
+  test('can be driven from the keyboard alone', async ({ api, issueDetail, tempIssue }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Reachable by keyboard') });
+
+    try {
+      await issueDetail.goto(tempIssue.key);
+      await issueDetail.searchForLink('Reachable by keyboard');
+      await expect(issueDetail.linkOption(other.key)).toBeVisible();
+
+      await issueDetail.linkSearch.press('Enter');
+
+      await expect(issueDetail.linkTo(other.key)).toBeVisible();
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+
+  test('only offers issues from this project', async ({ api, issueDetail, tempIssue }) => {
+    const elsewhere = await api.createIssue({ title: uniqueTitle('Somewhere else entirely') }, 'MOB');
+
+    try {
+      await issueDetail.goto(tempIssue.key);
+
+      await issueDetail.searchForLink('Somewhere else entirely');
+
+      await expect(issueDetail.linkOption(elsewhere.key)).toHaveCount(0);
+      await expect(issueDetail.linkNoMatches).toBeVisible();
+    } finally {
+      await api.deleteIssueIfPresent(elsewhere.key);
+    }
+  });
+});
+
+test.describe('linking while creating an issue', () => {
+  test('links the new issue to one that already exists', async ({ api, newIssuePage, issueDetail, page }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Existing work') });
+    const title = uniqueTitle('Created with a link');
+
+    try {
+      await newIssuePage.goto();
+      await newIssuePage.fill({ title });
+      await expect(newIssuePage.pendingLinksEmpty).toBeVisible();
+
+      await newIssuePage.addLink('blocks', other.key);
+      await expect(newIssuePage.pendingLink(other.key)).toContainText(other.title);
+
+      await newIssuePage.submitForm();
+      await expect(page).toHaveURL(/\/issues\/WEB-\d+$/);
+
+      await expect(issueDetail.linkTo(other.key).getByTestId('link-wording')).toHaveText('blocks');
+
+      const key = (await issueDetail.key.textContent())!;
+      expect((await api.listLinks(key))).toHaveLength(1);
+      await api.deleteIssueIfPresent(key);
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+
+  test('links to more than one issue at once', async ({ api, newIssuePage, issueDetail }) => {
+    const first = await api.createIssue({ title: uniqueTitle('First target') });
+    const second = await api.createIssue({ title: uniqueTitle('Second target') });
+
+    try {
+      await newIssuePage.goto();
+      await newIssuePage.fill({ title: uniqueTitle('Created with two links') });
+      await newIssuePage.addLink('relates', first.key);
+      await newIssuePage.addLink('duplicates', second.key);
+
+      await newIssuePage.submitForm();
+
+      await expect(issueDetail.linkTo(first.key)).toBeVisible();
+      await expect(issueDetail.linkTo(second.key)).toBeVisible();
+
+      const key = (await issueDetail.key.textContent())!;
+      await api.deleteIssueIfPresent(key);
+    } finally {
+      await api.deleteIssueIfPresent(first.key);
+      await api.deleteIssueIfPresent(second.key);
+    }
+  });
+
+  test('a link can be dropped before the issue is created', async ({ api, newIssuePage, issueDetail }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Changed my mind about this') });
+
+    try {
+      await newIssuePage.goto();
+      await newIssuePage.fill({ title: uniqueTitle('Created without the link') });
+      await newIssuePage.addLink('relates', other.key);
+      await expect(newIssuePage.pendingLink(other.key)).toBeVisible();
+
+      await newIssuePage.removeLink(other.key);
+
+      await expect(newIssuePage.pendingLinksEmpty).toBeVisible();
+
+      await newIssuePage.submitForm();
+      await expect(issueDetail.linksEmpty).toBeVisible();
+
+      const key = (await issueDetail.key.textContent())!;
+      await api.deleteIssueIfPresent(key);
+    } finally {
+      await api.deleteIssueIfPresent(other.key);
+    }
+  });
+
+  test('still opens the issue when a link fails after it was created', async ({
+    api,
+    newIssuePage,
+    issueDetail,
+    page,
+    toast,
+  }) => {
+    const other = await api.createIssue({ title: uniqueTitle('Doomed link target') });
+
+    try {
+      await newIssuePage.goto();
+      await newIssuePage.fill({ title: uniqueTitle('Created, link failed') });
+      await newIssuePage.addLink('relates', other.key);
+
+      await page.route('**/links', (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+          : route.continue(),
+      );
+
+      await newIssuePage.submitForm();
+
+      await expect(toast).toContainText('created, but 1 issue could not be linked');
+      await expect(page).toHaveURL(/\/issues\/WEB-\d+$/);
+
+      const key = (await issueDetail.key.textContent())!;
+      await api.deleteIssueIfPresent(key);
     } finally {
       await api.deleteIssueIfPresent(other.key);
     }

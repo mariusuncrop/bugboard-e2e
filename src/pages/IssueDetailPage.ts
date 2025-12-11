@@ -35,8 +35,9 @@ export class IssueDetailPage {
   readonly linkList: Locator;
   readonly linksEmpty: Locator;
   readonly linkType: Locator;
-  readonly linkTarget: Locator;
-  readonly addLinkButton: Locator;
+  readonly linkSearch: Locator;
+  readonly linkResults: Locator;
+  readonly linkNoMatches: Locator;
   readonly linkError: Locator;
   readonly deleteButton: Locator;
   readonly deleteHint: Locator;
@@ -78,8 +79,9 @@ export class IssueDetailPage {
     this.linkList = page.getByTestId('link-list');
     this.linksEmpty = page.getByTestId('links-empty');
     this.linkType = page.getByTestId('link-type');
-    this.linkTarget = page.getByTestId('link-target');
-    this.addLinkButton = page.getByTestId('add-link-button');
+    this.linkSearch = page.getByTestId('link-target');
+    this.linkResults = page.getByTestId('link-target-results');
+    this.linkNoMatches = page.getByTestId('link-target-empty');
     this.linkError = page.getByTestId('link-error');
     this.deleteButton = page.getByTestId('delete-issue');
     this.deleteHint = page.getByTestId('delete-issue-hint');
@@ -161,10 +163,21 @@ export class IssueDetailPage {
     return this.linkList.locator('li[data-testid^="link-"]');
   }
 
+  linkOption(issueKey: string): Locator {
+    // Issue keys are uppercase; the picker finds them whatever you type.
+    return this.page.getByTestId(`link-target-option-${issueKey.toUpperCase()}`);
+  }
+
+  /** Types into the picker and waits for the dropdown to answer. */
+  async searchForLink(term: string): Promise<void> {
+    await this.linkSearch.fill(term);
+    await this.linkResults.waitFor();
+  }
+
   async addLink(type: string, targetKey: string): Promise<void> {
     await this.linkType.selectOption(type);
-    await this.linkTarget.fill(targetKey);
-    await this.addLinkButton.click();
+    await this.searchForLink(targetKey);
+    await this.linkOption(targetKey).click();
   }
 
   async removeLink(issueKey: string): Promise<void> {

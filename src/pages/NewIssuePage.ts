@@ -25,6 +25,11 @@ export class NewIssuePage {
   readonly assignee: Locator;
   readonly dueOn: Locator;
   readonly labels: Locator;
+  readonly linkType: Locator;
+  readonly linkSearch: Locator;
+  readonly linkResults: Locator;
+  readonly pendingLinks: Locator;
+  readonly pendingLinksEmpty: Locator;
   readonly submit: Locator;
   readonly cancel: Locator;
   readonly attachmentInput: Locator;
@@ -46,6 +51,11 @@ export class NewIssuePage {
     this.assignee = page.getByTestId('issue-assignee');
     this.dueOn = page.getByTestId('issue-due-on');
     this.labels = page.getByTestId('issue-labels');
+    this.linkType = page.getByTestId('new-link-type');
+    this.linkSearch = page.getByTestId('new-link-target');
+    this.linkResults = page.getByTestId('new-link-target-results');
+    this.pendingLinks = page.getByTestId('pending-links');
+    this.pendingLinksEmpty = page.getByTestId('pending-links-empty');
     this.submit = page.getByTestId('issue-submit');
     this.cancel = page.getByTestId('issue-cancel');
     this.attachmentInput = page.getByTestId('issue-attachment-input');
@@ -86,6 +96,31 @@ export class NewIssuePage {
   /** Drops files onto the form rather than choosing them through the picker. */
   async dropFiles(paths: string[]): Promise<void> {
     await dropFiles(this.page, this.attachmentDropZone, paths);
+  }
+
+  linkOption(issueKey: string): Locator {
+    // Issue keys are uppercase; the picker finds them whatever you type.
+    return this.page.getByTestId(`new-link-target-option-${issueKey.toUpperCase()}`);
+  }
+
+  pendingLink(issueKey: string): Locator {
+    return this.page.getByTestId(`pending-link-${issueKey}`);
+  }
+
+  async searchForLink(term: string): Promise<void> {
+    await this.linkSearch.fill(term);
+    await this.linkResults.waitFor();
+  }
+
+  /** Picks an issue to link once this one has been created. */
+  async addLink(type: string, targetKey: string): Promise<void> {
+    await this.linkType.selectOption(type);
+    await this.searchForLink(targetKey);
+    await this.linkOption(targetKey).click();
+  }
+
+  async removeLink(issueKey: string): Promise<void> {
+    await this.page.getByTestId(`remove-link-${issueKey}`).click();
   }
 
   pendingAttachment(filename: string): Locator {
